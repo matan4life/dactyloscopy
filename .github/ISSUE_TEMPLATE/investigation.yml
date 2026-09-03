@@ -1,0 +1,33 @@
+name: Investigation
+description: A question that a measurement will answer. The measured facts go into quality/INV-nnn-*.md.
+title: "INV: "
+labels: ["inv"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        An investigation records facts: a question, a method, what was measured, a command that
+        reproduces it, the date, and what was left unchecked. It contains no decisions, no
+        judgements and no recommendations. A decision belongs to a refinement (`ref`), never to an
+        investigation.
+  - type: textarea
+    id: question
+    attributes:
+      label: Question
+      description: One question, precise enough that a measurement answers it.
+    validations:
+      required: true
+  - type: textarea
+    id: method
+    attributes:
+      label: How it will be measured
+      description: The data (by manifest id, never by path), the protocol, the metric, and the command that will reproduce the result.
+    validations:
+      required: true
+  - type: textarea
+    id: falsifier
+    attributes:
+      label: What would make the answer wrong
+      description: The assumptions the measurement rests on, and what observation would show that it measured the wrong thing.
+    validations:
+      required: true

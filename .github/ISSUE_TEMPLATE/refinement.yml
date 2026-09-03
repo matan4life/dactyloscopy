@@ -1,0 +1,32 @@
+name: Refinement
+description: A decision to be taken on the facts of named investigations. The decision goes into quality/REF-nnn-*.md.
+title: "REF: "
+labels: ["ref"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        This issue asks for a decision; it does not hold one. The decision itself, with the alternatives
+        considered and why each was rejected, is written in `quality/REF-nnn-*.md`, never in this issue.
+        The issue is closed by referencing the commit that adds that file.
+  - type: textarea
+    id: decision
+    attributes:
+      label: Decision to be taken
+      description: What has to be decided, and what its consequence would be (a new manifest, a changed protocol, a new metric version).
+    validations:
+      required: true
+  - type: textarea
+    id: facts
+    attributes:
+      label: Which INVs supply the facts
+      description: The investigations, by identifier, whose measured facts this decision rests on. A fact not recorded in an INV cannot be used.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives to consider
+      description: Every option on the table, including doing nothing. The REF file records why each rejected one was rejected.
+    validations:
+      required: true

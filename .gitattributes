@@ -1,0 +1,26 @@
+# The repository stores LF. Checkout uses the platform default.
+# Without this, a Windows working copy and a Linux container disagree on every line.
+* text=auto eol=lf
+
+*.py       text eol=lf
+*.md       text eol=lf
+*.json     text eol=lf
+*.yml      text eol=lf
+*.yaml     text eol=lf
+*.toml     text eol=lf
+*.cff      text eol=lf
+*.sh       text eol=lf
+Makefile   text eol=lf
+Snakefile  text eol=lf
+
+*.png binary
+*.pdf binary
+*.tif binary
+*.pkl binary
+
+# Generated lists: excluded from language statistics and collapsed in diffs.
+manifests/checksums/** linguist-generated=true
+
+# Third-party licence texts are stored exactly as published, trailing blank
+# line included, so git's whitespace check does not apply to them.
+LICENSES/** -whitespace

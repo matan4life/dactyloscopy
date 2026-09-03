@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Security report
+    url: https://github.com/matan4life/dactyloscopy/security/advisories/new
+    about: Vulnerabilities and anything that leaks biometric data are reported privately, never as an issue. See SECURITY.md.

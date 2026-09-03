@@ -1,0 +1,21 @@
+{
+  "upload_type": "software",
+  "title": "Dactyloscopy",
+  "description": "A laboratory for fingerprint research in which every number is traceable to the data, the protocol, the metric definition and the code revision that produced it. Code in this repository is licensed MIT and everything else — documentation, the record chain, manifests and observations — is licensed CC BY 4.0; the single licence field of this deposit records CC BY 4.0 because the deposit is documents only.",
+  "creators": [
+    {
+      "name": "Pohuliaiev, Yurii",
+      "orcid": "0009-0005-5883-1661",
+      "affiliation": "V. N. Karazin Kharkiv National University, Kharkiv, Ukraine"
+    }
+  ],
+  "access_right": "open",
+  "license": "cc-by-4.0",
+  "keywords": [
+    "fingerprint",
+    "biometrics",
+    "reproducibility",
+    "dactyloscopy",
+    "minutiae"
+  ]
+}

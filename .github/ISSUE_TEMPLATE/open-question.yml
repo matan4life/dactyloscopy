@@ -1,0 +1,33 @@
+name: Open question
+description: A question that nothing may settle silently. Work that depends on the answer stops until it is answered.
+title: "Open question: "
+labels: ["open-question"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Open questions are tracked here so that no task resolves one on its own. If work needs this
+        question settled, that work stops and points at this issue. Add `blocks:kernel` or
+        `blocks:number` when it blocks the accounting layer or the production of a number.
+  - type: input
+    id: identifier
+    attributes:
+      label: Identifier
+      description: The question's identifier, as referenced from INV and REF files.
+      placeholder: "M-2, D-5"
+    validations:
+      required: true
+  - type: textarea
+    id: question
+    attributes:
+      label: The question
+      description: What is not yet known, and what an answer would have to settle.
+    validations:
+      required: true
+  - type: textarea
+    id: blocks
+    attributes:
+      label: What it blocks
+      description: The investigations, refinements, manifests or runs that cannot proceed until this is answered.
+    validations:
+      required: true

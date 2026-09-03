@@ -1,0 +1,41 @@
+# Zenodo reads .zenodo.json and ignores this file entirely when both are
+# present. The two are synchronised by hand: a change to one is a change to
+# the other, in the same commit.
+#
+# The two files carry the same facts in deliberately different notations.
+# This is not an inconsistency; do not "correct" one file into the other:
+#   licence  .zenodo.json  "cc-by-4.0" (Zenodo's own vocabulary; the SPDX
+#                          spelling is not in it)
+#            CITATION.cff  CC-BY-4.0   (the SPDX identifier, which CFF
+#                          requires)
+#                          One value each, and the same one: the licence of
+#                          the content. Neither field can carry the code and
+#                          document split, and a CFF list would read as OR,
+#                          not AND, so it is not used. See REF-003.
+#   ORCID    .zenodo.json  bare   0009-0005-5883-1661
+#            CITATION.cff  URL    https://orcid.org/0009-0005-5883-1661 (CFF requires it)
+#   e-mail   .zenodo.json  has no such field on a creator
+#            CITATION.cff  has one, and it is deliberately left out
+cff-version: 1.2.0
+message: >-
+  No release has been cited yet. A DOI is minted only when a GitHub Release
+  is published from a `cite/` tag.
+title: Dactyloscopy
+type: software
+abstract: >-
+  A laboratory for fingerprint research in which every number is traceable to
+  the data, the protocol, the metric definition and the code revision that
+  produced it.
+authors:
+  - family-names: Pohuliaiev
+    given-names: Yurii
+    orcid: "https://orcid.org/0009-0005-5883-1661"
+    affiliation: "V. N. Karazin Kharkiv National University, Kharkiv, Ukraine"
+license: CC-BY-4.0
+repository-code: "https://github.com/matan4life/dactyloscopy"
+keywords:
+  - fingerprint
+  - biometrics
+  - reproducibility
+  - dactyloscopy
+  - minutiae

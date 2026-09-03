@@ -1,0 +1,58 @@
+# === Input data ===
+# Input data never lives in this repository. It is mounted read-only from
+# outside the tree. See docs/data.md and manifests/.
+/data/
+*.tif
+*.tiff
+*.bmp
+*.pgm
+*.raw
+*.ist
+*.xyt
+*.min
+
+# === Derived artifacts ===
+/derived/
+*.pkl
+*.npy
+*.npz
+
+# === Figures and reports (regenerable) ===
+*.png
+*.pdf
+!docs/**/*.svg
+
+# === Python ===
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.venv/
+venv/
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+.coverage
+coverage.xml
+htmlcov/
+
+# === Native build artifacts ===
+*.o
+*.a
+*.so
+*.dylib
+*.dll
+*.exe
+
+# === Machine-local ===
+.env
+
+# === IDE / OS ===
+.idea/
+.vscode/
+*.swp
+Thumbs.db
+desktop.ini
+.DS_Store

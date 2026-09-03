@@ -1,0 +1,33 @@
+name: External debt
+description: Something owed by someone or something outside this repository.
+title: "External debt: "
+labels: ["external-debt"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        External debt is a dependency on a party, a tool or a dataset that this repository does not
+        control: a binary without a published checksum, a dataset licence not yet granted, a fix waiting
+        upstream. Add `blocks:kernel` or `blocks:number` when it blocks the accounting layer or the
+        production of a number.
+  - type: textarea
+    id: owed
+    attributes:
+      label: What is owed
+      description: The concrete thing that is missing, and how its arrival would be recognised.
+    validations:
+      required: true
+  - type: input
+    id: owner
+    attributes:
+      label: By whom
+      description: The person, project or organisation outside this repository that owes it.
+    validations:
+      required: true
+  - type: textarea
+    id: blocks
+    attributes:
+      label: What it blocks
+      description: The investigations, refinements, manifests or runs that cannot proceed until the debt is settled.
+    validations:
+      required: true
