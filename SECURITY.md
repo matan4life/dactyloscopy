@@ -31,8 +31,22 @@ For that class:
 - report it immediately through either channel above;
 - name the path and the commit, and do not attach the leaked data to the
   report;
-- expect the history to be dealt with as the first order of business, ahead
-  of everything else in this repository.
+- expect the data to be removed from `HEAD` at once, a request to GitHub
+  support to purge caches and forks, and notification of whoever the data
+  came from.
+
+**Complete removal cannot be guaranteed, and this file does not promise it.**
+The repository is public, so anything pushed can be cloned, forked or crawled
+before it is noticed, and nothing added to it can be assumed removable
+afterwards: `main` refuses force pushes and non-linear history, after a
+`cite/` tag the history behind it is never rewritten, and a clone, a fork,
+GitHub's caches and any archive that has taken a copy are outside this
+repository's control altogether. A commit that carried biometric data stays in
+the history.
+
+Prevention is therefore the only control that works. That is why the
+prohibition is absolute rather than conditional, and why it is repeated in
+`README.md`, `CONTRIBUTING.md`, `docs/data.md` and here.
 
 ## Scope
 

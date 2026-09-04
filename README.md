@@ -29,7 +29,7 @@ immutable: a correction is a new version file, plus a new INV, plus a new REF,
 and the old version stays so that old results reproduce against it. A result
 that does not name the manifests it used is not a result.
 
-### The four rules
+## Absolute prohibitions
 
 1. **Never commit biometric data.** No fingerprint images, no minutiae, in any
    form, ever: not in a fixture, not temporarily, not in a branch. A commit
@@ -52,9 +52,10 @@ personal data, and an image good enough to fool a matcher can be reconstructed
 from minutiae, so minutiae are not published either. Input data is mounted
 read-only from outside the tree and addressed by manifest id, never by path.
 
-What is published instead: per-file checksums, pair lists and score vectors.
-Every metric in this repository can be recomputed from those alone, without
-the images. See [docs/data.md](docs/data.md).
+What will be published instead: per-file checksums, pair lists and score
+vectors, from which every metric will be recomputable without the images.
+Nothing is published yet — there is no manifest, no run and no score vector.
+See [docs/data.md](docs/data.md).
 
 ## Layout
 
@@ -66,6 +67,7 @@ workflow/         rules for derived data
 runs/             run records and the observations that support claims
 scripts/          one-off and maintenance scripts, never part of a run
 docs/             documentation, starting with the data policy
+LICENSES/         the CC BY 4.0 text; the MIT text is in LICENSE at the root
 .github/          issue forms
 ```
 

@@ -2,22 +2,26 @@
 
 This is a single-author research repository. It is public so that its results
 can be checked, not because it is looking for contributors. Read
-[README.md](README.md) first: it states the record model and the four rules
+[README.md](README.md) first: it states the record model and the prohibitions
 that everything here follows.
 
 ## The most valuable contribution
 
 The most valuable contribution is demonstrating that a number here is wrong.
-Every claim in this repository is recomputable from published observations:
-per-file checksums, pair lists and score vectors, described in
-[docs/data.md](docs/data.md). If you recompute a metric from those and obtain
-a different value, open an investigation issue with the command you ran and
-the value you got. That report is worth more than any patch.
+Nothing is published yet — there is no manifest, no run and no score vector —
+so there is nothing to recheck today. The intent is that every claim be
+recomputable from published observations: per-file checksums, pair lists and
+score vectors, described in [docs/data.md](docs/data.md). Once a number
+appears, recompute it from those; if you obtain a different value, open an
+investigation issue with the command you ran and the value you got. That
+report will be worth more than any patch.
 
 ## Issues
 
-Blank issues are disabled. Every issue is opened through one of the forms,
-and each form applies its label.
+Blank issues are disabled, so an issue opened through the GitHub web interface
+goes through one of four forms, and each form applies its label. `gh issue
+create` and the API bypass the forms: the four issues open today were filed
+that way, and carry a label but neither a form's title prefix nor its fields.
 
 | Label | Meaning |
 | --- | --- |
@@ -56,9 +60,18 @@ decision, and is not acted on.
 ## Quality gates
 
 The implementation language and toolchain are not chosen yet, so no automated
-gate exists; it arrives with that refinement. Until then a commit is checked
-by hand against what this file and [README.md](README.md) state: English
-only, LF line endings, no biometric data, no invented number.
+gate exists; it arrives with that refinement.
+
+Two things the tree holds on its own, and each has a limit. `.gitattributes`
+normalises line endings to LF as a file is committed, so a CRLF file does not
+enter the repository. `.gitignore` keeps the biometric extensions out of
+`git add`, which stops an accident and not an intent: `git add -f` overrides
+it, and it says nothing about a file that carries such data under another
+name.
+
+The rest rests on the author's attention until that refinement lands: English
+throughout, no biometric data whatever the extension, no invented number, and
+every factual claim carrying either a citation or a recorded check.
 
 Dependencies are added deliberately and rarely. Do not introduce one to save
 five lines.
@@ -67,5 +80,7 @@ five lines.
 
 Biometric data is never committed: no fingerprint images, no minutiae, in any
 form, not in a fixture, not temporarily, not in a branch. The extensions
-`.tif .tiff .bmp .pgm .raw .ist .xyt .min` are refused by `.gitignore`. A commit
-that adds one is an incident; see [SECURITY.md](SECURITY.md).
+`.tif .tiff .bmp .pgm .raw .ist .xyt .min` are ignored by `.gitignore`, which
+stops an accident and not an intent: `git add -f` overrides it, and an
+enforcing gate arrives with the toolchain refinement. A commit that adds one
+is an incident; see [SECURITY.md](SECURITY.md).

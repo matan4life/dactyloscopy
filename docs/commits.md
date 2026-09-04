@@ -17,7 +17,9 @@ repository has made.
 - lower case after the prefix, imperative mood: `add`, `record`, `adopt`;
 - one kind per commit, and a change spanning two kinds is split.
 
-`run:` is the one exception: its subject states the result.
+`run:` is the one exception among the eight kinds: its subject states the
+result. The root commit of this repository is exempt from the form altogether;
+no later commit is.
 
     run: eer@1 0.0323 on fvc2002/DB1_A, mindtct + bozorth3
 
