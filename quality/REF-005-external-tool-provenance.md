@@ -3,7 +3,7 @@
 Date: 2026-09-06
 Rests on: no investigation. This refinement records decisions about how an
 external tool enters this repository. Every fact a decision was taken against
-is frozen in `manifests/tools.json`, and the output that establishes it is in
+is frozen in `manifests/MAN-tools.v1.json`, and the output that establishes it is in
 `docs/tools.md`; where a decision rests on a report this repository has not
 verified, the sentence says so. This refinement carries no measured value of
 its own.
@@ -12,32 +12,43 @@ its own.
 
 An external tool is compiled from pinned source inside the image and reaches
 the runtime as a binary. Its provenance, its build, its invocation convention
-and the fixture that proves it works are recorded in `manifests/tools.json`,
+and the fixture that proves it works are recorded in `manifests/MAN-tools.v1.json`,
 one entry per tool.
 
 The sections below state the decisions in general form. Each applies to every
 tool that follows the first, and a second tool is added by writing a manifest
 entry, not by amending this file.
 
-### The source is pinned to a commit, and a mirror is declared as one
+### The source of record is the publisher's own artefact
 
-Source is fetched at a commit, never at a branch or a tag that can be moved.
-The checkout is asserted against that commit during the build, so a mirror
-that rewrites history stops the build instead of silently changing the tool.
+Source is fetched from whoever publishes the tool, and pinned by a checksum
+of the exact artefact. The checksum is verified before anything is unpacked,
+and a mismatch stops the build rather than warning, so a substituted or
+truncated download cannot become a binary.
 
-Where the upstream distributes through a request form, a download page behind
-a click-through, or anything else a build cannot fetch, a third-party mirror
-is used. The cost is real and is recorded rather than glossed: nobody has
-compared the mirror against the upstream release, so the manifest carries that
-correspondence as `UNVERIFIED` and the tool is not described as the upstream
-release. What is verified is narrower and still worth having: that this commit
-of this mirror, built these ways, produces this output on this fixture.
+Pinning by checksum is what makes the publisher the source of record. A URL
+alone names a location, and a location can serve different bytes tomorrow; the
+checksum names the artefact itself, and the manifest carries it beside the
+release the publisher assigned.
 
-The alternative was to vendor a tarball obtained by hand and commit its
-checksum. Rejected: the tarball would have to live somewhere, and the
-repository does not carry third-party source. A commit in a public mirror is
-addressable by anyone reading the manifest; a tarball on the author's disk is
-not.
+An earlier version of this refinement stated that the publisher distributes
+only through a request form a build cannot fetch, and used that to justify a
+third-party mirror. That statement was false: the publisher serves the archive
+over plain HTTPS with no registration. It is corrected here rather than
+quietly removed, because the repository's own rule is that a claim which
+turned out to be wrong is withdrawn in the open.
+
+The mirror is not disowned. The build recipe was worked out against it, and
+what it produces was checked against an independently built binary from
+another decade before the publisher's archive was ever fetched. Where a tool
+has no publisher-served artefact, a mirror pinned by commit remains the
+fallback, on the terms the earlier text set out: the correspondence to the
+upstream release is then `UNVERIFIED`, and the tool is not described as that
+release.
+
+The alternative was to vendor the archive and commit it. Rejected: the
+repository does not carry third-party source, and a checksum in a manifest is
+addressable by anyone reading it, while a copy on the author's disk is not.
 
 ### The whole upstream tree is built, and one binary is kept
 
@@ -113,11 +124,16 @@ nothing to do with the tool.
 
 ## Rejected
 
-- **Fetching from the upstream distributor at build time.** Not possible where
-  distribution is behind a request form; a build cannot fill in a form.
+- **A third-party mirror while the publisher serves the artefact directly.**
+  Rejected once it was established that the publisher does serve it: a mirror
+  adds a party to trust and buys nothing. It stays the fallback only where no
+  publisher-served artefact exists.
+- **Pinning the download by URL alone.** Rejected: a URL names a location, and
+  the same location can serve different bytes later. The checksum names the
+  artefact.
 - **Vendoring third-party source or binaries into the repository.** Excluded by
   the repository's own rules, and it would move the provenance question from a
-  commit id to a file nobody can trace.
+  checksum to a file nobody can trace.
 - **Building only the needed package.** Rejected above: the saving is in a
   stage that is discarded anyway.
 - **Adapting the tool to the dataset's image format.** Rejected above in favour
