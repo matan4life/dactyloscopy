@@ -1,0 +1,9 @@
+# Nothing is copied into the image: the Dockerfile has no COPY, because the
+# code arrives through the /work bind mount. The build context is therefore
+# excluded in full, so that neither the .git directory nor a stray data file
+# is ever sent to the daemon.
+#
+# The exclusion is not cosmetic. A build context is uploaded before the first
+# instruction runs, so a file that must never leave the machine would leave it
+# here, before any rule in the Dockerfile could apply.
+*
