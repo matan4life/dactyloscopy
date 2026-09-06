@@ -13,24 +13,43 @@
     "mindtct": {
       "role": "minutiae extractor",
       "source": {
-        "repository": {
-          "value": "https://github.com/lessandro/nbis",
-          "status": "VERIFIED",
-          "note": "Cloned at build time and the checkout asserted against the commit below."
-        },
-        "commit": {
-          "value": "3d3b05f0144b706bed56407957bc00779baf2fa5",
+        "kind": {
+          "value": "publisher archive, pinned by checksum",
           "status": "VERIFIED"
         },
-        "commit_date": {
-          "value": "2015-11-10",
+        "url": {
+          "value": "https://nigos.nist.gov/nist/nbis/nbis_v5_0_0.zip",
           "status": "VERIFIED",
-          "note": "Author and commit date agree; read with git log in the builder stage."
+          "note": "Served by the NIST Biometric Open Source Server over HTTPS with no registration, and listed on the NIGOS products page. The build fetches this URL directly."
+        },
+        "archive_sha256": {
+          "value": "0adf8ab0f6b0e4208de50ca00ba21d3d77112ecd66288757ddfed21f6bee92c3",
+          "status": "VERIFIED",
+          "note": "Checked before the archive is unpacked; sha256sum -c exits non-zero on a mismatch, which fails the build."
+        },
+        "archive_size_bytes": {
+          "value": 52595795,
+          "status": "VERIFIED"
+        },
+        "release": {
+          "value": "5.0.0",
+          "status": "VERIFIED",
+          "note": "The NIGOS page lists it as the stable version."
+        },
+        "release_date": {
+          "value": "2015-03-04",
+          "status": "VERIFIED",
+          "note": "The NIGOS page gives (03/04/2015). The server's Last-Modified header for the archive reads Tue, 03 Mar 2015 20:57:05 GMT, one day earlier; both were read directly and the page's date is taken as the release date."
         },
         "upstream": {
           "value": "NIST NBIS",
-          "status": "UNVERIFIED",
-          "note": "This is a third-party mirror. NIST distributes NBIS through a request form that a build cannot fetch, so the mirror has not been compared against an official NIST release. Correspondence between this tree and any NIST version is UNVERIFIED and must not be described as NBIS-the-release without that comparison."
+          "status": "VERIFIED",
+          "note": "The source is obtained from the publisher rather than corroborated through a third party: it is downloaded from nist.gov over HTTPS and its checksum is verified before use. This status rests on provenance of the download, not on any comparison against another copy."
+        },
+        "mirror_previously_used": {
+          "value": "https://github.com/lessandro/nbis at commit 3d3b05f0144b706bed56407957bc00779baf2fa5",
+          "status": "VERIFIED",
+          "note": "The recipe in build below was worked out against this mirror, which is why it is recorded rather than deleted. Compared against this archive: 3879 paths on both sides, none missing from either, 593 byte-identical, 3286 differing only in line endings (the mirror carries CRLF, the archive LF), and none differing in content. Built in the same directory, the mirror produces the byte-identical binary recorded below."
         }
       },
       "build": {

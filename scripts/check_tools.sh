@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Verify that the external tools in this image are the ones manifests/tools.json
+# Verify that the external tools in this image are the ones manifests/MAN-tools.v1.json
 # describes. Run inside the container: "make check-tools FVC_DB1_B=<path>".
 #
 # This script produces no number that any result depends on. It compares what
@@ -11,7 +11,7 @@
 set -euo pipefail
 
 FIXTURE_DIR="${1:-${FVC_DB1_B:-}}"
-MANIFEST="${MANIFEST:-/work/manifests/tools.json}"
+MANIFEST="${MANIFEST:-/work/manifests/MAN-tools.v1.json}"
 WORKDIR="$(mktemp -d)"
 trap 'rm -rf "$WORKDIR"' EXIT
 
@@ -53,7 +53,7 @@ actual_sha="$(sha256sum /usr/local/bin/mindtct | cut -d' ' -f1)"
 printf '  sha256 %s\n' "$actual_sha"
 if [ "$actual_sha" != "$expected_sha" ]; then
     printf '  expected %s\n' "$expected_sha"
-    fail "the binary in this image is not the one manifests/tools.json records"
+    fail "the binary in this image is not the one manifests/MAN-tools.v1.json records"
 fi
 echo "  matches the manifest"
 
