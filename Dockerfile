@@ -77,11 +77,13 @@ RUN pip install --no-cache-dir \
         pytest==9.1.1 \
         pillow==12.3.0
 
-# One file crosses the stage boundary. No compiler, no source tree, no other
-# NBIS tool. mindtct links only libm and libc — libpng and zlib are static
-# inside it — so the runtime needs no extra packages; scripts/check_tools.sh
-# checks that with ldd rather than trusting the claim.
+# Two files cross the stage boundary, and nothing else: no compiler, no source
+# tree, no NBIS tool this project does not use. Both link only libm and libc —
+# libpng and zlib are static inside mindtct — so the runtime needs no extra
+# packages; scripts/check_tools.sh checks that with ldd, and checks each
+# binary's digest against the manifest, rather than trusting either claim.
 COPY --from=nbis-builder /src/mindtct/bin/mindtct /usr/local/bin/mindtct
+COPY --from=nbis-builder /src/bozorth3/bin/bozorth3 /usr/local/bin/bozorth3
 
 WORKDIR /work
 
