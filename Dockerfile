@@ -19,20 +19,29 @@ RUN apt-get update \
         build-essential \
         ca-certificates \
         cmake \
-        git \
+        curl \
+        unzip \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /src
 
-# A third-party mirror, not a NIST release: NIST distributes NBIS behind a
-# request form that a build cannot fetch. The commit is pinned; a branch would
-# make the image depend on whatever the mirror holds on the day it is built.
-# What this costs, and why it is accepted, is in quality/REF-005.
-ARG NBIS_REPO=https://github.com/lessandro/nbis
-ARG NBIS_COMMIT=3d3b05f0144b706bed56407957bc00779baf2fa5
-RUN git clone "${NBIS_REPO}" . \
-    && git checkout --quiet "${NBIS_COMMIT}" \
-    && test "$(git rev-parse HEAD)" = "${NBIS_COMMIT}"
+# The publisher's own archive, pinned by checksum. NIST serves it over plain
+# HTTPS with no registration, so nothing stands between the build and the
+# release. The checksum is verified before a single file is unpacked, and
+# sha256sum -c exits non-zero on a mismatch, which stops the build instead of
+# warning. quality/REF-005 records why the source of record is the publisher's
+# archive rather than the mirror this recipe was first worked out against.
+#
+# The archive unpacks into a top-level Rel_5.0.0 directory; its contents are
+# moved into /src so that the build tree sits where the rest of this file
+# expects it.
+ARG NBIS_URL=https://nigos.nist.gov/nist/nbis/nbis_v5_0_0.zip
+ARG NBIS_SHA256=0adf8ab0f6b0e4208de50ca00ba21d3d77112ecd66288757ddfed21f6bee92c3
+RUN curl -fsSL --retry 3 -o /tmp/nbis.zip "${NBIS_URL}" \
+    && echo "${NBIS_SHA256}  /tmp/nbis.zip" | sha256sum -c - \
+    && unzip -q /tmp/nbis.zip -d /tmp/nbis \
+    && mv /tmp/nbis/Rel_5.0.0/* /src/ \
+    && rm -rf /tmp/nbis.zip /tmp/nbis
 
 # setup.sh refuses an install directory that does not exist, so it is created
 # first. Nothing is installed there that leaves this stage; the runtime image
