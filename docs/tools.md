@@ -156,86 +156,109 @@ than fall back to anything.
     #2 [internal] load metadata for docker.io/library/python:3.12-slim-bookworm@sha256:782412e85d0f0984994c290652577d4018aff08145c85b262bb63dc0c7522254
     #3 [internal] load .dockerignore
     #4 [nbis-builder 1/7] FROM docker.io/library/python:3.12-slim-bookworm@sha256:782412e85d0f0984994c290652577d4018aff08145c85b262bb63dc0c7522254
-    #5 [nbis-builder 2/7] RUN apt-get update     && apt-get install -y --no-install-recommends         build-essential         ca-certificates         cmake         curl         unzip     && rm -rf /var/lib/apt/lists/*
-    #6 [nbis-builder 7/7] RUN make config && make it
-    #7 [nbis-builder 6/7] RUN sed -i '142s/-O2 -w -ansi/-O2 -w -ansi -fcommon/' rules.mak     && sed -n '142p' rules.mak     && sed -n '142p' rules.mak | grep -q -- '-fcommon'
-    #8 [stage-1 2/4] RUN pip install --no-cache-dir         numpy==2.5.2         pytest==9.1.1         pillow==12.3.0
-    #9 [stage-1 3/4] COPY --from=nbis-builder /src/mindtct/bin/mindtct /usr/local/bin/mindtct
-    #10 [nbis-builder 4/7] RUN curl -fsSL --retry 3 -o /tmp/nbis.zip "https://nigos.nist.gov/nist/nbis/nbis_v5_0_0.zip"     && echo "0adf8ab0f6b0e4208de50ca00ba21d3d77112ecd66288757ddfed21f6bee92c3  /tmp/nbis.zip" | sha256sum -c -     && unzip -q /tmp/nbis.zip -d /tmp/nbis     && mv /tmp/nbis/Rel_5.0.0/* /src/     && rm -rf /tmp/nbis.zip /tmp/nbis
-    #11 [nbis-builder 3/7] WORKDIR /src
-    #12 [nbis-builder 5/7] RUN mkdir -p /usr/local/nbis     && ./setup.sh /usr/local/nbis --without-X11 --64
-    #13 [stage-1 4/4] WORKDIR /work
-    #14 writing image sha256:fef7f85368ccee8eacb3b09599ff4801552cc35316a0dc4a4ad90260b5330860 done
-    #14 naming to docker.io/library/dactyloscopy:dev
-    #14 naming to docker.io/library/dactyloscopy:dev done
+    #5 [nbis-builder 5/7] RUN mkdir -p /usr/local/nbis     && ./setup.sh /usr/local/nbis --without-X11 --64
+    #6 [stage-1 4/5] COPY --from=nbis-builder /src/bozorth3/bin/bozorth3 /usr/local/bin/bozorth3
+    #7 [nbis-builder 7/7] RUN make config && make it
+    #8 [nbis-builder 2/7] RUN apt-get update     && apt-get install -y --no-install-recommends         build-essential         ca-certificates         cmake         curl         unzip     && rm -rf /var/lib/apt/lists/*
+    #9 [stage-1 3/5] COPY --from=nbis-builder /src/mindtct/bin/mindtct /usr/local/bin/mindtct
+    #10 [nbis-builder 3/7] WORKDIR /src
+    #11 [nbis-builder 6/7] RUN sed -i '142s/-O2 -w -ansi/-O2 -w -ansi -fcommon/' rules.mak     && sed -n '142p' rules.mak     && sed -n '142p' rules.mak | grep -q -- '-fcommon'
+    #12 [nbis-builder 4/7] RUN curl -fsSL --retry 3 -o /tmp/nbis.zip "https://nigos.nist.gov/nist/nbis/nbis_v5_0_0.zip"     && echo "0adf8ab0f6b0e4208de50ca00ba21d3d77112ecd66288757ddfed21f6bee92c3  /tmp/nbis.zip" | sha256sum -c -     && unzip -q /tmp/nbis.zip -d /tmp/nbis     && mv /tmp/nbis/Rel_5.0.0/* /src/     && rm -rf /tmp/nbis.zip /tmp/nbis
+    #13 [stage-1 2/5] RUN pip install --no-cache-dir         numpy==2.5.2         pytest==9.1.1         pillow==12.3.0
+    #14 [stage-1 5/5] WORKDIR /work
+    #15 writing image sha256:720568f0723c1f451658246d196276ed8f9e26c02da5ed91e76b0cf42e535d3e done
+    #15 naming to docker.io/library/dactyloscopy:dev done
     image id:
-    sha256:fef7f85368ccee8eacb3b09599ff4801552cc35316a0dc4a4ad90260b5330860
+    sha256:720568f0723c1f451658246d196276ed8f9e26c02da5ed91e76b0cf42e535d3e
     base, as pinned in the Dockerfile:
     FROM python:3.12-slim-bookworm@sha256:782412e85d0f0984994c290652577d4018aff08145c85b262bb63dc0c7522254 AS nbis-builder
     FROM python:3.12-slim-bookworm@sha256:782412e85d0f0984994c290652577d4018aff08145c85b262bb63dc0c7522254
 
 Only the step headers are kept; the `CACHED` markers and the compiler output
 between them are cut. BuildKit numbers steps in the order it schedules them
-rather than in file order.
+rather than in file order. Two steps now copy out of the builder, one per
+tool.
 
 ## What ended up in the runtime image
 
 The search below covers the whole filesystem rather than `PATH` alone, and
-names six NBIS binaries. One line comes back:
+names six NBIS binaries. Two come back, and they are the two this project
+uses:
 
     $ docker run --rm dactyloscopy:dev bash -c 'find / -type f \( -name bozorth3 -o -name nfiq -o -name mindtct -o -name an2ktool -o -name dpyimage -o -name cwsq \) 2>/dev/null; test -d /usr/local/nbis && echo "/usr/local/nbis PRESENT" || echo "/usr/local/nbis absent"; command -v gcc cc make cmake git || echo "no build tooling on PATH"'
+    /usr/local/bin/bozorth3
     /usr/local/bin/mindtct
     /usr/local/nbis absent
     no build tooling on PATH
 
-The builder stage does produce a second binary, which stays there:
+## The matcher's two silent defaults
 
-    $ docker build --target nbis-builder -t nbis-probe .
-    $ docker run --rm nbis-probe bash -c 'ls /src/bozorth3/bin/; ls /src/mindtct/bin/'
-    bozorth3
-    mindtct
+`bozorth3` prints them in its own usage:
 
-    $ docker image rm -f nbis-probe
+    $ bozorth3
+    bozorth3: ERROR: no xyt-files are specified on the command line
+    Usage:
+    ...
+       -m1                     all xyt files use representation according to ANSI INCITS 378-2004
+       -n <max-minutiae>       set maximum number of munitiae to use from any file [150]; legal range is [0,200]
+       -A parameter=<value>
+              minminutiae=#    set minimum number of munitiae for match score to be more than 0 [10]
+
+Both are recorded in the manifest as part of the invocation. Neither binds on
+the fixture below, where the counts are 33, 24 and 62: all are above the
+floor of 10 and below the cap of 150.
 
 ## The verification
 
     MSYS_NO_PATHCONV=1 docker run --rm -v "D:/My PET Projects/dactyloscopy:/work" -v "<fixture>:/fixture:ro" -w /work "dactyloscopy:dev" bash scripts/check_tools.sh /fixture
-    === 1. the runtime image carries the tool and not the toolchain ===
+    === 1. the runtime image carries the tools and not the toolchain ===
       gcc       absent
       cc        absent
       g++       absent
       make      absent
       cmake     absent
       git       absent
-      bozorth3  absent
       /src      absent
       mindtct   /usr/local/bin/mindtct
+      bozorth3  /usr/local/bin/bozorth3
 
-    === 2. the binary is the one the manifest froze ===
-      sha256 4d587263e242781e97afe236f5c8c46f275eb617c42e47f34d969c536c122c53
-      matches the manifest
+    === 2. each binary is the one the manifest froze ===
+      mindtct   4d587263e242781e97afe236f5c8c46f275eb617c42e47f34d969c536c122c53  matches
+      bozorth3  24fb809830f6a940dc27290b700b1d8e581a1f5c2c6bb9a97a856f96e8cdb287  matches
 
-    === 3. what mindtct links against ===
+    === 3. what they link against ===
+      mindtct:
 
 The four lines `ldd` prints begin with a tab, so they are quoted unindented;
-indenting them would put a space before a tab and alter captured output:
+indenting them would put a space before a tab and alter captured output. Both
+tools print the same four:
 
 ```
-	linux-vdso.so.1 (0x0000779d03c37000)
-	libm.so.6 => /lib/x86_64-linux-gnu/libm.so.6 (0x0000779d03a76000)
-	libc.so.6 => /lib/x86_64-linux-gnu/libc.so.6 (0x0000779d03894000)
-	/lib64/ld-linux-x86-64.so.2 (0x0000779d03c39000)
+	linux-vdso.so.1 (0x000074313f118000)
+	libm.so.6 => /lib/x86_64-linux-gnu/libm.so.6 (0x000074313ef57000)
+	libc.so.6 => /lib/x86_64-linux-gnu/libc.so.6 (0x000074313ed75000)
+	/lib64/ld-linux-x86-64.so.2 (0x000074313f11a000)
+only libm, libc and the loader
+bozorth3:
+	linux-vdso.so.1 (0x0000730348667000)
+	libm.so.6 => /lib/x86_64-linux-gnu/libm.so.6 (0x00007303456c1000)
+	libc.so.6 => /lib/x86_64-linux-gnu/libc.so.6 (0x00007303454df000)
+	/lib64/ld-linux-x86-64.so.2 (0x0000730348669000)
 ```
 
 The transcript continues:
 
-      only libm, libc and the loader
+        only libm, libc and the loader
 
     === 4. usage ===
-    Invalid number of arguments on command line
-    Usage : mindtct [-b] [-m1] <finger_img_in> <oroot>
-            -b  = contrast boost image
-            -m1 = output "*.xyt" according to ANSI INCITS 378-2004
+      mindtct:
+        Invalid number of arguments on command line
+        Usage : mindtct [-b] [-m1] <finger_img_in> <oroot>
+                -b  = contrast boost image
+      bozorth3:
+        bozorth3: ERROR: no xyt-files are specified on the command line
+        Usage:
+           To compute match scores for fingerprint pairs:
 
     === 5. TIFF to PNG carries the same pixels ===
       Pillow 12.3.0
@@ -243,12 +266,12 @@ The transcript continues:
       101_2  tif L (374, 388)  ->  png L  pixels identical: True
       102_1  tif L (374, 388)  ->  png L  pixels identical: True
 
-    === 6. the reference fixture ===
+    === 6. the mindtct fixture ===
       101_1  minutiae 33  sha256 4aebdeeeab9fe3dd21f0bf2815df09f92da00c2c6ed6d906c0e2a61955b46437  MATCH
       101_2  minutiae 24  sha256 a9baeb93db9fe96b4a686032e5bb94fc044945081140b147471ee13015e611bc  MATCH
       102_1  minutiae 62  sha256 ac7a7d3e878848d491e82ca488f7c1dd4fe99742d8ecac46b150ab60ead2c16e  MATCH
 
-    === 7. determinism: the same PNG twice, all eight outputs ===
+    === 7. mindtct determinism: the same PNG twice, all eight outputs ===
       brw  identical
       dm   identical
       hcm  identical
@@ -257,6 +280,23 @@ The transcript continues:
       min  identical
       qm   identical
       xyt  identical
+
+    === 8. the bozorth3 fixture, the full pairwise matrix ===
+      101_1  101_1  ->   216  MATCH
+      101_1  101_2  ->    60  MATCH
+      101_1  102_1  ->     9  MATCH
+      101_2  101_2  ->   163  MATCH
+      101_2  102_1  ->     4  MATCH
+      102_1  102_1  ->   499  MATCH
+
+    === 9. bozorth3 symmetry on the off-diagonal pairs ===
+      101_1  101_2     60 == 60    symmetric
+      101_1  102_1      9 == 9     symmetric
+      101_2  102_1      4 == 4     symmetric
+
+    === 10. bozorth3 determinism: one pair, five times ===
+      101_1 101_1 -> 216 216 216 216 216
+      one distinct value across five runs
 
     all checks passed
 
@@ -267,10 +307,47 @@ The fixture directory is mounted read-only and its path is replaced by
 `<fixture>` above; nothing else in the transcript is altered. The images stay
 outside the repository, as `docs/data.md` requires.
 
-The fixture values are unchanged from when the mirror was the source. They did
-not need changing: the same program produces them regardless of where its
-source was fetched from, which is what the byte-identical rebuild above
-demonstrates.
+`mindtct`'s fixture is re-run here rather than taken on trust: the image
+changed when the second binary was added, so the first tool's evidence was
+produced again in the new image.
+
+## When a digest does not match
+
+The check is a gate, and the failure path was exercised rather than
+described. A copy of the manifest was edited to carry a wrong digest, once
+per tool, and the script was pointed at it:
+
+    $ docker run ... -e MANIFEST=/tampered/mindtct-tampered.json dactyloscopy:dev bash scripts/check_tools.sh /fixture
+    === 2. each binary is the one the manifest froze ===
+      mindtct   4d587263e242781e97afe236f5c8c46f275eb617c42e47f34d969c536c122c53
+                expected 0000000000000000000000000000000000000000000000000000000000000000
+    FAIL: mindtct in this image is not the binary the manifest records
+    exit: 1
+
+    $ docker run ... -e MANIFEST=/tampered/bozorth3-tampered.json dactyloscopy:dev bash scripts/check_tools.sh /fixture
+    === 2. each binary is the one the manifest froze ===
+      mindtct   4d587263e242781e97afe236f5c8c46f275eb617c42e47f34d969c536c122c53  matches
+      bozorth3  24fb809830f6a940dc27290b700b1d8e581a1f5c2c6bb9a97a856f96e8cdb287
+                expected 0000000000000000000000000000000000000000000000000000000000000000
+    FAIL: bozorth3 in this image is not the binary the manifest records
+    exit: 1
+
+Both values are printed, the run stops at that section, and the exit code is
+non-zero.
+
+## What the self-comparisons show, on three images
+
+    $ for n in 101_1 101_2 102_1; do bozorth3 $n.xyt $n.xyt; done
+    file    minutiae  self-comparison score
+    101_1   33        216
+    101_2   24        163
+    102_1   62        499
+
+Measured on these three images only: the self-comparison score rises with the
+minutia count rather than reaching a fixed ceiling, so the score is not
+normalised by the number of minutiae and a self-comparison does not give a
+constant that other scores could be divided by. Three images are three
+images; this is what was observed, not a property established of the tool.
 
 ## Without the fixture directory
 
