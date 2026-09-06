@@ -3,6 +3,7 @@
 
 IMAGE ?= dactyloscopy:dev
 LABDATA ?=
+FVC_DB1_B ?=
 
 # Docker on Windows takes Windows paths. Under Git Bash and MSYS a POSIX path
 # in a "-v" argument is rewritten before docker sees it: "/work" becomes
@@ -18,20 +19,22 @@ REPO := $(shell pwd -W 2>/dev/null || pwd)
 # cygpath -m gives the Windows path with forward slashes, which docker accepts
 # and a shell does not mangle. Absent cygpath, LABDATA is passed through.
 LABDATA_HOST := $(shell cygpath -m "$(LABDATA)" 2>/dev/null || echo "$(LABDATA)")
+FVC_DB1_B_HOST := $(shell cygpath -m "$(FVC_DB1_B)" 2>/dev/null || echo "$(FVC_DB1_B)")
 
 DATA_MOUNTS := -v "$(LABDATA_HOST)/raw:/data/raw:ro" -v "$(LABDATA_HOST)/derived:/data/derived"
 REPO_MOUNT := -v "$(REPO):/work"
 
 .DEFAULT_GOAL := help
-.PHONY: help image shell test
+.PHONY: help image shell test check-tools
 
 help: ## List the targets
 	@echo "Targets:"
-	@grep -E '^[a-z][a-z-]*:.*## ' $(MAKEFILE_LIST) | sed 's/:.*## /|/' | awk -F'|' '{ printf "  %-8s %s\n", $$1, $$2 }'
+	@grep -E '^[a-z][a-z-]*:.*## ' $(MAKEFILE_LIST) | sed 's/:.*## /|/' | awk -F'|' '{ printf "  %-12s %s\n", $$1, $$2 }'
 	@echo ""
 	@echo "Variables:"
-	@echo "  IMAGE     image name and tag (currently $(IMAGE))"
-	@echo "  LABDATA   root of the data mounted into the container; required by shell"
+	@echo "  IMAGE        image name and tag (currently $(IMAGE))"
+	@echo "  LABDATA      root of the data mounted into the container; required by shell"
+	@echo "  FVC_DB1_B    directory of FVC2002 Db1_b images; required by check-tools"
 
 image: ## Build the image and print its digest
 	$(DOCKER) build -t "$(IMAGE)" .
@@ -70,3 +73,18 @@ test: ## Run pytest in the container; needs no data
 	    exit 0; \
 	  fi; \
 	  exit $$status
+
+check-tools: ## Verify the external tools against manifests/tools.json
+	@if [ -z "$(FVC_DB1_B)" ]; then \
+	  echo "FVC_DB1_B is not set, so nothing was checked."; \
+	  echo ""; \
+	  echo "It names the directory holding the FVC2002 Db1_b images, which the"; \
+	  echo "fixture in manifests/tools.json was recorded against:"; \
+	  echo ""; \
+	  echo "  make check-tools FVC_DB1_B=/path/to/FVC2002/Dbs/Db1_b"; \
+	  echo ""; \
+	  echo "The directory is mounted read-only and no layout under LABDATA is"; \
+	  echo "assumed: that is not decided yet."; \
+	  exit 1; \
+	fi
+	$(DOCKER) run --rm $(REPO_MOUNT) -v "$(FVC_DB1_B_HOST):/fixture:ro" -w /work "$(IMAGE)" bash scripts/check_tools.sh /fixture
