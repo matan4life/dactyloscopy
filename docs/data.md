@@ -34,9 +34,11 @@ manifest is what ties that id to checksums of the files it consists of.
 
 Of the three things below, the first now exists: `manifests/checksums/fvc2002/`
 carries one `sha256sum`-format list per subset, and
-`manifests/MAN-fvc2002.v1.json` names each list and the digest of that list. The
-other two do not: there is no run and no score vector, because no run has
-happened. What follows is the policy that governs publication, and the reason
+`manifests/MAN-fvc2002.v1.json` names each list and the digest of that list.
+`make verify LABDATA=<root>` checks both halves — each list against the digest
+recorded for it, and every file the list names against the corpus — and
+`docs/manifests.md` records what that printed. The other two do not exist:
+there is no run and no score vector, because no run has happened. What follows is the policy that governs publication, and the reason
 each part of it is safe to publish.
 
 | Published, or to be | What it is | Why it is safe |

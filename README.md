@@ -86,9 +86,9 @@ LICENSES/         the CC BY 4.0 text; the MIT text is in LICENSE at the root
 .github/          issue forms
 ```
 
-`manifests/`, `quality/`, `implementation/`, `implementation/tools/`,
-`tests/`, `experiments/`, `workflow/`, `runs/` and `scripts/` each carry a
-`README.md` stating what belongs in that directory and what does not. A
+`manifests/`, `quality/`, `implementation/`, `implementation/library/`,
+`implementation/tools/`, `tests/`, `experiments/`, `workflow/`, `runs/` and
+`scripts/` each carry a `README.md` stating what belongs in that directory and what does not. A
 directory is created by the commit that first puts a file in it, and its
 contract arrives with it.
 
@@ -103,8 +103,10 @@ which also decides the split between `implementation/library/` and
 `implementation/tools/` and why there is no packaging file.
 
 Everything runs inside the image `make image` builds: `make test` for the
-suite, `make check-tools` to verify the tools against their manifest. What
-those printed is in [docs/tools.md](docs/tools.md) and
+suite, `make verify` to check every manifest against what it names and report
+what it could not check, `make check-tools` to run the tools against their
+manifest's fixtures. What those printed is in
+[docs/manifests.md](docs/manifests.md), [docs/tools.md](docs/tools.md) and
 [docs/container.md](docs/container.md).
 
 ## Citation

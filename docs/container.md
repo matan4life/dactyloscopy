@@ -7,9 +7,9 @@ command that produced a number can be read back from the tree rather than
 from a shell history.
 
 Every command below was run on 2026-09-06 and the output shown is what it
-printed, except where a section says it was re-captured on 2026-09-07, which
-is when the image gained a third tool. A section that was re-captured says so
-and says what it used to claim.
+printed, except where a section says it was re-captured on 2026-09-07 — the
+day the image gained a third tool and the day the manifest verifier was added.
+A section that was re-captured says so and says what it used to claim.
 
 ## The machine it was checked on
 
@@ -151,11 +151,12 @@ nothing would mean the mount or the suite is wrong, and `make test` reports it.
     ============================= test session starts ==============================
     platform linux -- Python 3.12.14, pytest-9.1.1, pluggy-1.6.0
     rootdir: /work
-    collected 22 items
+    collected 45 items
 
-    tests/test_iso_extract.py ......................                         [100%]
+    tests/test_iso_extract.py ......................                         [ 48%]
+    tests/test_manifest_verify.py .......................                    [100%]
 
-    ============================== 22 passed in 0.40s ==============================
+    ============================== 45 passed in 0.53s ==============================
     $ echo $?
     0
 
@@ -164,13 +165,15 @@ A failing test fails the target:
     $ printf 'def test_that_fails():\n    assert 1 == 2\n' > tests/test_sanity_probe.py
     $ make test
     FAILED tests/test_sanity_probe.py::test_that_fails - assert 1 == 2
-    ========================= 1 failed, 22 passed in 0.51s =========================
-    make: *** [Makefile:71: test] Error 1
+    ========================= 1 failed, 45 passed in 0.63s =========================
+    make: *** [Makefile:72: test] Error 1
 
 The probe file was deleted afterwards and is not in the tree.
 
-`test` mounts the repository and nothing else, so it needs no `LABDATA`. What
-the suite checks is `docs/tools.md`'s subject, not this page's.
+`test` mounts the repository and nothing else, so it needs no `LABDATA`. The
+counts were re-captured on 2026-09-07: the suite was 22 tests over one file
+until `tests/test_manifest_verify.py` was added. What the suite checks is
+`docs/tools.md`'s and `docs/manifests.md`'s subject, not this page's.
 
 ### 5. `make shell` without `LABDATA` starts nothing
 
@@ -196,8 +199,8 @@ would name a path rather than the variable that has to be set.
 
 ### 6. `make help` lists every target
 
-Re-captured on 2026-09-07. The listing here had gone stale: `check-tools` and
-`FVC_DB1_B` existed and were not in it.
+Re-captured twice on 2026-09-07: once because `check-tools` and `FVC_DB1_B`
+existed and were not in the listing, and again when `verify` was added.
 
     $ make
     Targets:
@@ -205,12 +208,16 @@ Re-captured on 2026-09-07. The listing here had gone stale: `check-tools` and
       image        Build the image and print its digest
       shell        Interactive session in the container, with the data mounted
       test         Run pytest in the container; needs no data
+      verify       Verify every manifest against what it names; LABDATA adds the corpus
       check-tools  Verify the tools in the image against manifests/MAN-tools.v2.json
 
     Variables:
       IMAGE        image name and tag (currently dactyloscopy:dev)
-      LABDATA      root of the data mounted into the container; required by shell
+      LABDATA      root of the data mounted into the container; required by shell,
+                   and by verify if the corpus is to be checked
       FVC_DB1_B    directory of FVC2002 Db1_b images; required by check-tools
+
+What `verify` prints is `docs/manifests.md`'s subject.
 
 `help` is the default goal, so `make` with no argument prints the menu rather
 than doing something. The listing is generated from the `##` comments in the
