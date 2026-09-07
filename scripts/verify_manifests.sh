@@ -48,7 +48,7 @@ manifests = sorted(glob.glob(os.path.join(repo, "manifests", "MAN-*.json")))
 if not manifests:
     raise SystemExit("FAIL: manifests/MAN-*.json matched nothing")
 
-grand = {"total": 0, "checked": 0, "failed": 0, "unchecked": 0}
+grand = {"total": 0, "checked": 0, "failed": 0, "refused": 0, "unchecked": 0}
 failures = []
 
 for path in manifests:
@@ -72,8 +72,9 @@ for path in manifests:
           % (summary["total"], summary["checked"], summary["unchecked"]))
     for cls in sorted(summary["by_class"]):
         entry = summary["by_class"][cls]
-        print("    %-13s %3d fields, %3d checked, %d failed"
-              % (cls, entry["total"], entry["checked"], entry["failed"]))
+        print("    %-13s %3d fields, %3d checked, %d failed, %d refused"
+              % (cls, entry["total"], entry["checked"], entry["failed"],
+                 entry["refused"]))
 
     checked = [f for f in fields if f.checked]
     if checked:
@@ -85,7 +86,14 @@ for path in manifests:
         if not f.ok:
             failures.append("%s  %s  %s" % (name, f.path, f.detail))
 
-    unchecked = [f for f in fields if not f.checked]
+    refused = [f for f in fields if f.refused]
+    if refused:
+        print("  refused, %d fields:" % len(refused))
+        for f in refused:
+            print("    %-11s %s  %s" % (f.cls, f.path, f.detail))
+            failures.append("%s  %s  %s" % (name, f.path, f.detail))
+
+    unchecked = [f for f in fields if not f.checked and not f.refused]
     if unchecked:
         print("  not checked here, %d fields:" % len(unchecked))
         reasons = {}
@@ -101,7 +109,8 @@ for path in manifests:
 print("=== coverage over every manifest")
 print("  %d fields with a value and a status" % grand["total"])
 print("  %d checked, %d of them failing" % (grand["checked"], grand["failed"]))
-print("  %d not checked here" % grand["unchecked"])
+print("  %d not checked here, %d of those refused for their status"
+      % (grand["unchecked"], grand["refused"]))
 if grand["total"]:
     print("  %.1f%% of fields checked"
           % (100.0 * grand["checked"] / grand["total"]))

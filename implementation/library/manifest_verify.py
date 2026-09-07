@@ -38,6 +38,20 @@ RECOMPUTABLE = "recomputable"
 DERIVABLE = "derivable"
 EXTERNAL = "external"
 
+# The keys that name a pinned object rather than describing one. REF-014's
+# "Class three is bound to its pin" makes these class one, and the class-three
+# fields beside them are bound to whichever of these the block carries.
+PIN_KEYS = ("archive_sha256", "archive_size_bytes", "commit", "tree")
+
+# Blocks whose fields are produced again by running something. `fixture` and
+# `cases` and `pairs` need the tools; `runtime` needs the dynamic loader;
+# `identity` is digests and a composition over them; the corpus blocks need
+# the corpus. None of them describes a file this repository controls, which is
+# what class two means, so none of them may be reported as class two.
+RECOMPUTABLE_BLOCKS = ("fixture", "cases", "pairs", "runtime", "identity",
+                       "parts", "subsets", "distribution", "index_files",
+                       "observations")
+
 
 class Field:
     """One field of a manifest, with what the verifier made of it."""
@@ -49,12 +63,27 @@ class Field:
         self.cls = cls
         self.parent = parent
         self.checked = False
+        self.refused = False
         self.ok = None
         self.detail = ""
 
     def check(self, ok, detail):
         self.checked = True
         self.ok = ok
+        self.detail = detail
+        return self
+
+    def refuse(self, detail):
+        """The reading rule forbade the value. Not a check, and a failure.
+
+        Kept apart from check() because counting a refusal as a check would
+        make the coverage number rise when a manifest gets worse, and the
+        coverage number is the one thing REF-014 decision 3 asks this
+        mechanism to get right.
+        """
+        self.checked = False
+        self.refused = True
+        self.ok = False
         self.detail = detail
         return self
 
@@ -100,30 +129,66 @@ def classify(path, field, parent):
     prints the class of every field.
     """
     parts = _blocks(path)
+    key = parts[-1]
 
-    # 1. Anything inside a `source` block is a claim about an artefact this
-    #    repository did not make, bound to the pin in the same block.
-    if "source" in parts:
+    # 1. A pin is class one, and REF-014 says so in terms: "The pin is itself
+    #    a class-one field: a digest, a commit id, a tree hash." It sits in a
+    #    `source` block beside the claims it binds, and it is the one thing in
+    #    that block that names an object rather than describing one.
+    if "source" in parts and key in PIN_KEYS:
+        return RECOMPUTABLE
+
+    # 2. The rest of a `source` block is a claim about an artefact this
+    #    repository did not make, bound to the pin above. The asserted
+    #    numbers of the canon format are the same kind of thing: what a
+    #    standard says an angle grid is, and what a tool's own range is.
+    if "source" in parts or "asserted_numbers" in parts:
         return EXTERNAL
 
-    # 1b. Anything inside a `build` block describes the recipe: a package
-    #     list, a patch, a command, a path inside a builder stage that the
-    #     runtime cannot see. REF-014 places these in class two by name.
+    # 3. A `build` block describes the recipe: a package list, a patch, a
+    #    command, a path inside a builder stage the runtime cannot see.
+    #    REF-014 places these in class two by name.
     if "build" in parts:
         return DERIVABLE
 
-    # 2. A field the verifier has a shape for is recomputable.
+    # 4. A field the verifier has a shape for.
     if _check_spec(path, field, parent) is not None:
         return RECOMPUTABLE
 
-    # 3. A fixture value is recomputable, by running the tool that produced it.
-    #    This verifier does not run tools; the report says who does.
-    if "fixture" in parts or "cases" in parts or "pairs" in parts:
+    # 5. The rest of class one, by the block it sits in. Each of these names
+    #    a thing that can be produced again by running something, which is
+    #    REF-014's test; what runs it differs, and the report says so.
+    if _blocks_intersect(parts, RECOMPUTABLE_BLOCKS):
         return RECOMPUTABLE
 
-    # 4. Everything else asserts something about a file this repository
+    # 6. Everything else asserts something about a file this repository
     #    controls, and does not say which.
     return DERIVABLE
+
+
+def classify_by_block(path):
+    """The class of a field whose value may not be read.
+
+    The same rules as classify(), minus the one that looks at the field's own
+    shape. A field refused for its status still gets a class, because the
+    coverage report groups by class and a refusal that fell out of the
+    grouping would be a field the report did not account for.
+    """
+    parts = _blocks(path)
+    key = parts[-1]
+    if "source" in parts and key in PIN_KEYS:
+        return RECOMPUTABLE
+    if "source" in parts or "asserted_numbers" in parts:
+        return EXTERNAL
+    if "build" in parts:
+        return DERIVABLE
+    if _blocks_intersect(parts, RECOMPUTABLE_BLOCKS):
+        return RECOMPUTABLE
+    return DERIVABLE
+
+
+def _blocks_intersect(parts, names):
+    return any(part in names for part in parts)
 
 
 def _sibling(parent, key):
@@ -162,6 +227,12 @@ def _check_spec(path, field, parent):
     # against that digest while never opening a single file the list names.
     if key == "checksums" and _sibling(parent, "path"):
         return ("checksum-list", field["value"], _sibling(parent, "path")["value"])
+
+    # An identity composed over the parts beside it needs no file at all:
+    # REF-011 decision 5 fixes the encoding, so the scalar is recomputable
+    # from the manifest alone.
+    if key == "composed_sha256" and isinstance(parent, dict)             and isinstance(parent.get("parts"), dict):
+        return ("composed-identity", parent["parts"], field["value"])
 
     if "sha256" in field and isinstance(field.get("value"), str):
         return ("digest-of-named-file", field["value"], field["sha256"])
@@ -239,7 +310,13 @@ def verify(manifest_path, repo_root, image_root="/", corpus_root=None):
     # $LABDATA, which docs/data.md makes the only way a dataset is addressed,
     # so expanding the environment is reading the manifest rather than
     # assuming a layout.
-    declared = manifest.get("distribution", {}).get("root", {}).get("value")
+    root_field = manifest.get("distribution", {}).get("root", {})
+    declared = root_field.get("value")
+    if root_field.get("status") in UNREADABLE:
+        # The reading rule applies to this field before the walk reaches it,
+        # because its value is what locates the corpus. Refusing here is why
+        # a CONFLICT on it cannot be worked around by using it first.
+        declared = None
     if corpus_root is None and isinstance(declared, str):
         expanded = os.path.expandvars(declared)
         if "$" not in expanded and os.path.isdir(expanded):
@@ -248,27 +325,34 @@ def verify(manifest_path, repo_root, image_root="/", corpus_root=None):
     fields = []
     for path, node, parent in walk(manifest):
         status = node.get("status")
+
+        if status in UNREADABLE:
+            # The value is not fetched, not classified from, and not stored:
+            # the class comes from the blocks the field sits in, which is the
+            # path and nothing else. Refusing after reading would be reporting
+            # a refusal it had not made.
+            field = Field(path, None, status, classify_by_block(path), parent)
+            fields.append(field)
+            field.refuse("status is %s: REF-014 decision 7 forbids reading it"
+                         % status)
+            continue
+
         cls = classify(path, node, parent)
         field = Field(path, node.get("value"), status, cls, parent)
         fields.append(field)
 
-        if status in UNREADABLE:
-            field.check(False, "status is %s: REF-014 decision 7 forbids "
-                               "reading it" % status)
-            continue
-
         spec = _check_spec(path, node, parent)
         if cls == EXTERNAL:
-            field.skip("not checked here: a claim about the outside world, "
-                       "bound to this block's pin")
+            pin = _pin_of(parent)
+            if pin:
+                field.skip("not checked here: a claim about the outside "
+                           "world, bound to the pin %s in this block" % pin)
+            else:
+                field.skip("not checked here: a claim about the outside "
+                           "world, and this block carries no pin to bind it")
             continue
         if spec is None:
-            if cls == RECOMPUTABLE:
-                field.skip("not checked here: needs the tool run; "
-                           "scripts/check_tools.sh covers the tool fixtures")
-            else:
-                field.skip("not checked here: no field says which file to "
-                           "derive it from")
+            field.skip(_why(cls, _blocks(path)))
             continue
 
         kind, first, second = spec
@@ -322,6 +406,16 @@ def verify(manifest_path, repo_root, image_root="/", corpus_root=None):
             field.check(os.path.exists(target),
                         "%s: %s" % (first, "present" if os.path.exists(target)
                                     else "absent"))
+        elif kind == "composed-identity":
+            # REF-011 decision 5: one part per line, label=value, in the order
+            # the parts are given, sha256 over those bytes.
+            blob = "".join("%s=%s\n" % (label, part["value"])
+                           for label, part in first.items()).encode("ascii")
+            got = hashlib.sha256(blob).hexdigest()
+            field.check(got == second,
+                        "recomputed from %d parts: %s"
+                        % (len(first), "matches" if got == second
+                           else "%s, recorded %s" % (got, second)))
         elif kind == "checksum-list":
             list_path = os.path.join(repo_root, first)
             if not _inside(repo_root, list_path):
@@ -351,6 +445,45 @@ def verify(manifest_path, repo_root, image_root="/", corpus_root=None):
     return fields
 
 
+def _pin_of(parent):
+    """The pin a block carries, if it carries one. REF-014 binds class three
+    to it, and a block with no pin is a block whose claims nothing binds."""
+    if not isinstance(parent, dict):
+        return None
+    for key in PIN_KEYS:
+        if _sibling(parent, key):
+            return key
+    return None
+
+
+def _why(cls, parts):
+    """Why a field was not checked here, in the terms of what would check it.
+
+    One reason per block, and each has to be true of every field it covers:
+    the report is the mechanism's account of its own blind spots, and a reason
+    that is false about a field is worse than no reason at all.
+    """
+    if cls == DERIVABLE:
+        return "not checked here: this verifier has no shape that matches it"
+    if _blocks_intersect(parts, ("fixture", "cases", "pairs")):
+        return ("not checked here: needs the tool run; "
+                "scripts/check_tools.sh covers the tool fixtures")
+    if "runtime" in parts:
+        return ("not checked here: needs the dynamic loader; "
+                "scripts/check_tools.sh compares this list")
+    if _blocks_intersect(parts, ("identity", "parts")):
+        return ("not checked here: needs the artefact the part names, which "
+                "this field does not locate")
+    if _blocks_intersect(parts, ("subsets", "distribution", "index_files",
+                                 "observations")):
+        return ("not checked here: needs the corpus measured, and no field "
+                "says where this number was measured from")
+    if "source" in parts:
+        return ("not checked here: the pinned object is not reachable from "
+                "the image, so the pin is not re-fetched on every run")
+    return "not checked here: no shape in this verifier matches it"
+
+
 def _resolve(value, repo_root, image_root):
     """Where a path value points, and the root it must stay under.
 
@@ -376,12 +509,16 @@ def _inside(root, path):
 def summarise(fields):
     """Counts the report prints: by class, and checked against not."""
     summary = {"total": len(fields), "checked": 0, "failed": 0,
-               "unchecked": 0, "by_class": {}}
+               "refused": 0, "unchecked": 0, "by_class": {}}
     for field in fields:
         entry = summary["by_class"].setdefault(
-            field.cls, {"total": 0, "checked": 0, "failed": 0})
+            field.cls, {"total": 0, "checked": 0, "failed": 0, "refused": 0})
         entry["total"] += 1
-        if field.checked:
+        if field.refused:
+            summary["refused"] += 1
+            entry["refused"] += 1
+            summary["unchecked"] += 1
+        elif field.checked:
             summary["checked"] += 1
             entry["checked"] += 1
             if not field.ok:

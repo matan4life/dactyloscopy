@@ -33,15 +33,14 @@ assuming a layout.
 
 ## What it printed, with the corpus
 
-375 lines, of which the summaries are quoted in full below and the lists of
+380 lines, of which the summaries are quoted in full below and the lists of
 unchecked field names are cut at the first few of each group; nothing else is
 altered.
 
     $ make verify LABDATA=<root>
     === MAN-fvc2002.v1.json
       124 fields with a value and a status: 16 checked, 108 not
-        derivable     108 fields,   0 checked, 0 failed
-        recomputable   16 fields,  16 checked, 0 failed
+        recomputable  124 fields,  16 checked, 0 failed, 0 refused
       checked:
         ok   recomputable subsets.fvc2002/DB1_A.path  Dbs/Db1_a: present
         ok   recomputable subsets.fvc2002/DB1_A.checksums  manifests/checksums/fvc2002/DB1_A.sha256: list digest matches, 800 files, 0 differing
@@ -49,26 +48,26 @@ altered.
         ok   recomputable subsets.fvc2002/DB1_B.checksums  manifests/checksums/fvc2002/DB1_B.sha256: list digest matches, 80 files, 0 differing
         ... six more subsets, 800 or 80 files each, 0 differing ...
       not checked here, 108 fields:
-        not checked here: no field says which file to derive it from (108)
-          derivable   distribution.root
-          derivable   distribution.layout
-          derivable   distribution.files_total
+        not checked here: needs the corpus measured, and no field says where this number was measured from (108)
+          recomputable distribution.root
+          recomputable distribution.layout
+          recomputable distribution.files_total
           ... 105 more ...
 
     === MAN-minutia.v1.json
       8 fields with a value and a status: 0 checked, 8 not
-        derivable       8 fields,   0 checked, 0 failed
+        external        8 fields,   0 checked, 0 failed, 0 refused
       not checked here, 8 fields:
-        not checked here: no field says which file to derive it from (8)
-          derivable   x-manifest.asserted_numbers.angle_full_circle
-          derivable   x-manifest.asserted_numbers.angle_maximum
+        not checked here: a claim about the outside world, and this block carries no pin to bind it (8)
+          external    x-manifest.asserted_numbers.angle_full_circle
+          external    x-manifest.asserted_numbers.angle_maximum
           ... six more ...
 
     === MAN-tools.v1.json
       63 fields with a value and a status: 6 checked, 57 not
-        derivable      23 fields,   0 checked, 0 failed
-        external       16 fields,   0 checked, 0 failed
-        recomputable   24 fields,   6 checked, 0 failed
+        derivable      21 fields,   0 checked, 0 failed, 0 refused
+        external       12 fields,   0 checked, 0 failed, 0 refused
+        recomputable   30 fields,   6 checked, 0 failed, 0 refused
       checked:
         ok   recomputable tools.mindtct.binary.path  /usr/local/bin/mindtct: present
         ok   recomputable tools.mindtct.binary.sha256  /usr/local/bin/mindtct: matches
@@ -80,19 +79,21 @@ altered.
         ... by reason, then by name ...
 
     === MAN-tools.v2.json
-      137 fields with a value and a status: 12 checked, 125 not
-        derivable      59 fields,   0 checked, 0 failed
-        external       25 fields,   0 checked, 0 failed
-        recomputable   53 fields,  12 checked, 0 failed
+      137 fields with a value and a status: 15 checked, 122 not
+        derivable      46 fields,   0 checked, 0 failed, 0 refused
+        external       19 fields,   0 checked, 0 failed, 0 refused
+        recomputable   72 fields,  15 checked, 0 failed, 0 refused
       checked:
+        ok   recomputable tools.mindtct.identity.composed_sha256  recomputed from 1 parts: matches
         ok   recomputable tools.mindtct.binary.path  /usr/local/bin/mindtct: present
-        ... eleven more: three files, each with its path, digest and size ...
+        ... twelve more: two more composed identities, and four files, each
+            with its path, its digest and its size ...
 
     === coverage over every manifest
       332 fields with a value and a status
-      34 checked, 0 of them failing
-      298 not checked here
-      10.2% of fields checked
+      37 checked, 0 of them failing
+      295 not checked here, 0 of those refused for their status
+      11.1% of fields checked
 
     every check that ran, passed
     $ echo $?
@@ -109,9 +110,9 @@ altered.
     ...
     === coverage over every manifest
       332 fields with a value and a status
-      18 checked, 0 of them failing
-      314 not checked here
-      5.4% of fields checked
+      21 checked, 0 of them failing
+      311 not checked here, 0 of those refused for their status
+      6.3% of fields checked
       LABDATA was not set, so no corpus digest was verified
 
     every check that ran, passed
@@ -123,40 +124,58 @@ is the failure the whole mechanism exists to remove.
 
 ## What it costs
 
-    make verify                    0.716 s
-    make verify LABDATA=<root>    13.372 s
+    make verify                    0.682 - 0.729 s over four runs
+    make verify LABDATA=<root>    13.4 - 31.6 s over five runs
 
-The second reads 452 MB across a bind mount and digests 3520 files.
-`INV-010` F-3 measured `sha256sum -c` doing the same work in 6.312 s; this
-verifier opens and digests each file from Python, and the difference is that.
-Both are small enough for `REF-014` decision 4, which makes verification a
-precondition rather than an occasional command.
+The second reads 452 MB across a Windows bind mount and digests 3520 files, and
+it is the spread rather than the figure that is worth recording: the fastest
+run followed one that had just read the same files, and the three consecutive
+runs taken afterwards were 31.5, 30.4 and 31.6 s. `INV-010` F-3 measured
+`sha256sum -c` doing the same work in 6.312 s; this verifier opens and digests
+each file from Python, and both numbers are from this machine and this mount.
+
+`REF-014` decision 4 rests on the order of magnitude, not on a ceiling, and
+says so.
 
 ## The coverage is the point
 
-10.2% of fields checked is not a good number. It is the honest one, and it is
+11.1% of fields checked is not a good number. It is the honest one, and it is
 printed on every run.
 
-`REF-014` says why each class is where it is. **Recomputable** fields are
-checked. **External** fields — everything inside a `source` block — are claims
-about an artefact this repository did not make, and they are bound to the pin
-in the same block: a pinned object cannot make a claim about it expire, so
-those need no recurring check until the pin moves. **Derivable** fields assert
-something about a file this repository controls and do not say which file, and
-the verifier does not guess: `INV-009` F-2 measured what guessing costs, when a
-search for the four package names of `extra_build_packages` found all four in
-the `Dockerfile` because the fourth was in a builder stage the field is not
-about. A check that can be satisfied by the wrong file reports a pass.
+`REF-014` says why each class is where it is. **Recomputable** fields are the
+ones a machine could produce again, and the verifier checks the ones it can
+produce from the image, the repository and the corpus; for the rest it says
+what would have to run — a tool, the dynamic loader, the corpus, or a fetch of
+the pinned object. **External** fields are claims about the outside world,
+bound to the pin in the same block: a pinned object cannot make a claim about
+it expire, so those need no recurring check until the pin moves, and the report
+names the pin each one is bound to. **Derivable** fields assert something about
+a file this repository controls and do not say which file, and the verifier
+does not guess: `INV-009` records, under block **D** of its "Reproducing this",
+that a substring search for the four package names of `extra_build_packages`
+finds all four in the `Dockerfile`, because a second builder stage installs
+exactly that set. A check that can be satisfied by the wrong file reports a
+pass.
 
-So the 298 are the size of the gap, printed rather than implied. `INV-009`
+So the 295 are the size of the gap, printed rather than implied. `INV-009`
 found a mechanism that printed "all checks passed" over 42 of 63 fields; the
 whole difference here is that the denominator is on the screen.
+
+**Where the classification is an approximation, and it says so by printing.**
+The rules are structural: a block decides the class, and a block is not always
+homogeneous. `MAN-fvc2002.v1` comes out entirely `recomputable` because its
+fields are overwhelmingly measurements of a corpus, and a handful inside it are
+not — `distribution.provenance` and `distribution.licence` are claims about
+the outside world sitting in a block full of counts. `REF-014` decision 1
+anticipates exactly this: the class is printed for every field so that a reader
+can compare it with the refinement, which is what the classification living in
+code costs and how that cost is paid.
 
 ## What the other mechanism covers, and why the two do not add up
 
 `scripts/check_tools.sh` reads 42 fields of `MAN-tools.v2` — `INV-010` F-1
 measured exactly which — and runs the tools to check its fixtures.
-`make verify` checks 34 fields across all four manifests without running a
+`make verify` checks 37 fields across all four manifests without running a
 tool. The two sets overlap in the binary paths and digests and diverge
 everywhere else: `binary.size_bytes` and the eight checksum lists are in the
 290 `INV-010` found nothing reading, and the fixture counts, scores, exit codes
@@ -174,7 +193,8 @@ was pointed at them with `REPO=`:
 
     $ docker run --rm -v "<tampered>:/tampered:ro" -v "<repo>:/work:ro" \
         -w /work -e REPO=/tampered dactyloscopy:dev bash scripts/verify_manifests.sh
-      19 checked, 3 of them failing
+      21 checked, 2 of them failing
+      311 not checked here, 1 of those refused for their status
     FAIL: 3 checks did not pass
       MAN-fvc2002.v1.json  subsets.fvc2002/DB1_B.checksums  manifests/checksums/fvc2002/DB1_B.sha256: 4127e484a99b90ba2def64aad7315dffa88d42ba1a2412f64412b2f8674c7dd9, recorded 1111111111111111111111111111111111111111111111111111111111111111
       MAN-tools.v1.json  tools.bozorth3.binary.size_bytes  status is CONFLICT: REF-014 decision 7 forbids reading it
@@ -185,7 +205,14 @@ was pointed at them with `REPO=`:
 The three defects are a wrong binary digest, a checksum list whose recorded
 digest no longer matches it, and a status set to `CONFLICT` on a field the
 verifier would otherwise have checked. The third is the reading rule: the value
-was correct, and the point is that it was never used.
+was correct, and the point is that it was never fetched.
+
+Note where the third one is counted. Two of the three are failures of a check,
+so the run says "21 checked, 2 of them failing"; the refusal is not a check and
+is counted among the 311 that were not checked, with its own tally. Counting a
+refusal as a check would let a manifest raise its own coverage by marking a
+field `CONFLICT`, and the coverage number is the one thing this mechanism is
+built to get right.
 
 Three more failures were found by probing rather than by tampering, and each
 is now a check the verifier makes:
@@ -203,10 +230,63 @@ than by reading it. Every path check now requires the resolved path to stay
 under the root it was resolved against, and a name inside a checksum list must
 stay under its subset.
 
-`tests/test_manifest_verify.py` holds all of it: the wrong digest, the changed
-byte in a listed corpus file, the `CONFLICT` refusal, both escaping paths, and
-the classification of nine named fields — which `REF-014` decision 1 requires,
-since it put the classification in code.
+`tests/test_manifest_verify.py` holds all of it: the wrong digest, a list
+whose recorded digest no longer matches, the changed byte in a listed corpus
+file, the `CONFLICT` refusal and that it is not counted as a check, a
+`CONFLICT` on `distribution.root`, the composed identity recomputed and
+mis-stated, both escaping paths, and the classification of fourteen named
+fields — which `REF-014` decision 1 requires, since it put the classification
+in code.
+
+## What an adversarial pass over the first version found
+
+The verifier and the records were read by a set of checkers whose instruction
+was to refute them. Six of their findings changed this mechanism, and they are
+recorded because the report is supposed to be the mechanism's account of its
+own blind spots, and these were blind spots in that account.
+
+**A pin was reported as class three.** `REF-014` says in terms that "the pin is
+itself a class-one field: a digest, a commit id, a tree hash", and the verifier
+put `source.archive_sha256`, `source.commit` and `source.tree` inside the
+`source` block with everything else and never touched them. The rule now takes
+the pin out of that block first. The test that holds the classification had the
+same error in it, and correcting the code made it fail, which is what that test
+is for.
+
+**A linked-library list, an identity and a corpus count were reported as class
+two.** `REF-014`'s class one names a linked-library list and a fixture count by
+name, and the verifier's default was class two, whose meaning is "asserts
+something about a file this repository controls". None of them does.
+
+**The reason printed beside a not-checked field was often false.** Every
+class-two field carried "no field says which file to derive it from", including
+the 116 fields of the corpus and canon manifests that assert nothing about any
+file. Each reason now says what would have to run, and the one that covers the
+rest says only that no shape in this verifier matches the field.
+
+**A refusal was counted as a check.** A field refused for a `CONFLICT` status
+was recorded with the same call as a failed check, so the coverage percentage
+rose when a manifest got worse. Refusals are now their own tally, counted among
+the not-checked.
+
+**`distribution.root` was read before its status was.** It is the one value the
+verifier fetches before the walk, because it locates the corpus, and it was
+therefore the one place the reading rule could be worked around. Its status is
+now checked first.
+
+**A `CONFLICT` field's value was read in the course of classifying it.** The
+verifier now classifies a refused field from its path alone and stores no value
+for it, so the docstring's claim that the value is never read is true of the
+code rather than of the intention.
+
+Three further findings are recorded and not acted on. The classification is
+structural and a block is not always homogeneous, which the section above
+states. `scripts/verify_manifests.sh` carries the whole report as an embedded
+program, so a run that imports the module gets `verify` and `summarise` and
+must format its own output. And the fix that makes a `checksums` field verify
+the corpus depends on a sibling key literally named `path`, so a manifest that
+named it something else would fall back to checking the list against its own
+digest.
 
 ## Two defects the report exposed while it was being built
 

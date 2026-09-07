@@ -68,8 +68,12 @@ CLASSIFICATION = [
     # (path, the object it sits in, the class REF-014 puts it in)
     ("tools.mindtct.source.url",
      {"url": field("https://example.invalid/a.zip")}, mv.EXTERNAL),
+    # A pin, and REF-014's "Class three is bound to its pin" makes it class
+    # one: "The pin is itself a class-one field: a digest, a commit id, a
+    # tree hash." This row said `external` until the code was corrected, and
+    # it is the row that caught the drift.
     ("tools.mindtct.source.archive_sha256",
-     {"archive_sha256": field("0" * 64)}, mv.EXTERNAL),
+     {"archive_sha256": field("0" * 64)}, mv.RECOMPUTABLE),
     ("tools.mindtct.build.extra_build_packages",
      {"extra_build_packages": field(["a", "b"])}, mv.DERIVABLE),
     ("tools.mindtct.build.clone_path",
@@ -84,7 +88,17 @@ CLASSIFICATION = [
     ("tools.mindtct.invocation.command",
      {"command": field("mindtct <a> <b>")}, mv.DERIVABLE),
     ("x-manifest.asserted_numbers.angle_maximum",
-     {"angle_maximum": field(255)}, mv.DERIVABLE),
+     {"angle_maximum": field(11519)}, mv.EXTERNAL),
+    ("tools.mindtct.identity.composed_sha256",
+     {"composed_sha256": field("0" * 64), "parts": {}}, mv.RECOMPUTABLE),
+    ("tools.mindtct.identity.parts.binary",
+     {"binary": field("0" * 64)}, mv.RECOMPUTABLE),
+    ("tools.mindtct.runtime.shared_libraries",
+     {"shared_libraries": field(["libc.so.6"])}, mv.RECOMPUTABLE),
+    ("tools.iso-extract.source.commit",
+     {"commit": field("0" * 40)}, mv.RECOMPUTABLE),
+    ("tools.iso-extract.source.release",
+     {"release": field("5.0.0"), "commit": field("0" * 40)}, mv.EXTERNAL),
 ]
 
 
@@ -266,8 +280,12 @@ def test_a_conflict_field_is_not_read_and_is_a_failure(tmp_path):
     conflicted = fields["tools.t.binary.sha256"]
 
     assert conflicted.ok is False
+    assert conflicted.refused is True
+    assert conflicted.checked is False
     assert "CONFLICT" in conflicted.detail
-    # The value would have matched. The point is that it was never used.
+    # The value would have matched. The point is that it was never fetched:
+    # a refused field carries no value at all.
+    assert conflicted.value is None
     assert "matches" not in conflicted.detail
 
 
@@ -285,6 +303,90 @@ def test_every_other_status_is_read(tmp_path, status):
 
 
 # --- the coverage report --------------------------------------------------
+
+def test_a_refusal_is_not_counted_as_a_check(tmp_path):
+    """Otherwise the coverage number rises when a manifest gets worse.
+
+    A field refused for its status is a field the verifier did not check, and
+    `REF-014` decision 3 makes the coverage number the point of the whole
+    mechanism. Counting a refusal as a check would let a manifest raise its
+    own coverage by marking a field CONFLICT.
+    """
+    target = tmp_path / "artefact.bin"
+    target.write_bytes(b"x")
+    doc = {"tools": {"t": {"binary": {
+        "path": field(str(target)),
+        "sha256": field(mv._sha256_file(str(target))),
+    }}}}
+    before = mv.summarise(mv.verify(write(tmp_path, "a.json", doc),
+                                    str(tmp_path)))
+
+    doc["tools"]["t"]["binary"]["sha256"]["status"] = "CONFLICT"
+    after = mv.summarise(mv.verify(write(tmp_path, "b.json", doc),
+                                   str(tmp_path)))
+
+    assert before["checked"] == 2 and before["failed"] == 0
+    assert after["checked"] == 1
+    assert after["refused"] == 1
+    assert after["unchecked"] == 1
+    assert after["checked"] < before["checked"]
+
+
+def test_a_conflict_on_the_distribution_root_stops_the_corpus_being_found(
+        tmp_path):
+    """The one value read before the walk reaches it.
+
+    `distribution.root` locates the corpus, so the verifier fetches it first.
+    That is the one place where the reading rule could be worked around by
+    using a value before checking its status, and it is not.
+    """
+    data = tmp_path / "corpus" / "subset"
+    data.mkdir(parents=True)
+    (data / "one.tif").write_bytes(b"one")
+    listing = tmp_path / "list.sha256"
+    listing.write_text("%s  one.tif\n" % mv._sha256_file(str(data / "one.tif")),
+                       encoding="utf-8")
+    doc = {
+        "distribution": {"root": field(str(tmp_path / "corpus"),
+                                       status="CONFLICT")},
+        "subsets": {"s": {
+            "path": field("subset"),
+            "checksums": field("list.sha256",
+                               sha256=mv._sha256_file(str(listing))),
+        }},
+    }
+    fields = {f.path: f for f in mv.verify(
+        write(tmp_path, "m.json", doc), str(tmp_path))}
+
+    assert fields["distribution.root"].refused is True
+    assert fields["subsets.s.checksums"].checked is False
+    assert "no corpus mounted" in fields["subsets.s.checksums"].detail
+
+
+def test_a_composed_identity_is_recomputed_from_its_parts(tmp_path):
+    """A check that needs no file, and real coverage `INV-010` found missing.
+
+    `REF-011` decision 5 fixes the encoding: one part per line, label=value,
+    newline-terminated, sha256 over those bytes.
+    """
+    import hashlib
+    parts = {"library": field("a" * 64), "caller_source": field("b" * 40),
+             "caller": field("c" * 64)}
+    blob = ("library=%s\ncaller_source=%s\ncaller=%s\n"
+            % ("a" * 64, "b" * 40, "c" * 64)).encode("ascii")
+    good = hashlib.sha256(blob).hexdigest()
+
+    for digest, expected in ((good, True), ("0" * 64, False)):
+        doc = {"tools": {"t": {"identity": {
+            "parts": {k: dict(v) for k, v in parts.items()},
+            "composed_sha256": field(digest),
+        }}}}
+        fields = {f.path: f for f in mv.verify(
+            write(tmp_path, "m-%s.json" % expected, doc), str(tmp_path))}
+        composed = fields["tools.t.identity.composed_sha256"]
+        assert composed.checked is True
+        assert composed.ok is expected
+
 
 def test_the_summary_accounts_for_every_field(tmp_path):
     """Checked plus unchecked is the total, and the classes sum to it too.
@@ -311,6 +413,12 @@ def test_the_summary_accounts_for_every_field(tmp_path):
     assert summary["by_class"][mv.DERIVABLE]["total"] == 1
     assert summary["by_class"][mv.RECOMPUTABLE]["total"] == 2
     assert summary["failed"] == 0
+    # The counts are not free to be anything: two fields were checked here,
+    # the path and the digest, and a summariser that reported nothing checked
+    # would pass every assertion above.
+    assert summary["checked"] == 2
+    assert summary["refused"] == 0
+    assert summary["by_class"][mv.RECOMPUTABLE]["checked"] == 2
 
 
 def test_every_unchecked_field_says_why(tmp_path):
