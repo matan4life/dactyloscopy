@@ -30,16 +30,18 @@ Code never carries a dataset path as a literal. A dataset is addressed by its
 manifest id, `<competition>/<subset>`, for example `fvc2002/DB1_A`, and the
 manifest is what ties that id to checksums of the files it consists of.
 
-## What will be published instead
+## What is published instead
 
-Nothing is published yet: the tree holds no manifest, no run and no score
-vector, and `manifests/checksums/` does not exist. What follows is the policy
-that governs publication when there is something to publish, and the reason
+Of the three things below, the first now exists: `manifests/checksums/fvc2002/`
+carries one `sha256sum`-format list per subset, and
+`manifests/MAN-fvc2002.v1.json` names each list and the digest of that list. The
+other two do not: there is no run and no score vector, because no run has
+happened. What follows is the policy that governs publication, and the reason
 each part of it is safe to publish.
 
-| To be published | What it is | Why it is safe |
+| Published, or to be | What it is | Why it is safe |
 | --- | --- | --- |
-| Per-file checksums | One digest per input file, to be listed under `manifests/checksums/`. | A digest reveals nothing about the file's content. It lets anyone who holds the dataset confirm they hold the same bytes, and it is how a manifest names its data. |
+| Per-file checksums | One digest per input file, listed under `manifests/checksums/`. Published for FVC2002. | A digest reveals nothing about the file's content. It lets anyone who holds the dataset confirm they hold the same bytes, and it is how a manifest names its data. |
 | Pair lists | The list of comparisons made in a run: which two files were compared, and whether the pair is genuine or impostor. | File names and labels only. The images stay where they were. |
 | Score vectors | The matcher's score for each pair in the pair list. | A score describes a comparison, not a finger. Every metric here is a function of the score vector and the pair labels alone. |
 
