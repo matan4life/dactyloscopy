@@ -223,16 +223,17 @@ ambiguity, and carrying the count is what keeps a downstream zero readable.
 
 ## Open
 
-- ⟨OPEN⟩ **The standard's semantics have not been read here.** Decision 1
+- ⟨OPEN⟩ **The standard's semantics have not been read here.** Tracked as
+  `D-3`, issue 7, in the narrowed form `INV-003` leaves it in. Decision 1
   adopts them; no investigation in this repository establishes what they are.
   Which fields exist, what the type codes mean, where the origin sits and what
   range the quality takes are facts, and they need an investigation that reads
   the standard's text. No reader or writer may be written before it exists.
 - ⟨OPEN⟩ **The rotation between the standard's angle and the native one is
-  reported, not measured here.** INV-002 R-2 records the sample and the method
-  it rests on, both from outside this repository. Decision 2 makes that
-  rotation part of every emission, so a converter written before it is
-  verified here rests on an unverified fact.
+  reported, not measured here.** Tracked as `D-4`, issue 8. INV-002 R-2
+  records the sample and the method it rests on, both from outside this
+  repository. Decision 2 makes that rotation part of every emission, so a
+  converter written before it is verified here rests on an unverified fact.
 - ⟨OPEN⟩ `D-1`, already tracked: which coordinate convention the matcher
   requires. Decision 5 makes the emission write-only but does not say which
   convention is written.
