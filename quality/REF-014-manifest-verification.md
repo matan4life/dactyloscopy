@@ -34,17 +34,26 @@ The test is what a machine would have to do to disagree with the value.
 
 **Class one, recomputable.** The value can be produced again by running
 something: a digest, a size, a linked-library list, a fixture count, a score, a
-file's presence at a path. `INV-010` F-1 measured that all 42 read fields are
-of this class, and that many more like them are not read: every `size_bytes`,
-the eight `checksums` digests, the 3520 entries those lists hold.
+file's presence at a path. The classes are this refinement's, not an
+investigation's: no INV assigns one, and where a class is claimed for a field
+below it is this document doing the assigning. What the investigations supply
+is the fields. `INV-010` F-1 measured which 42 are read — digests, paths,
+identities, linked-library lists, fixture counts and scores, every one of them
+of this class — and named every `size_bytes` among the 290 that nothing reads;
+`INV-010` F-2 measured the eight `checksums` digests and the 3520 entries those
+lists hold, which nothing reads either.
 
 **Class two, derivable from a file this repository controls.** The value
 asserts something about the `Dockerfile`, a script, or another tracked file: a
 package list, a patch line, a command, an invocation, a copy. Such a value is
-mechanically checkable **only if the field says where to look**, and no field
-says. `INV-009` F-1 places `build.setup`, `build.patch`, `build.make` and
-`build.artifact_copied` here, checkable in that record only because a person
-wrote the comparison and named the file.
+mechanically checkable **only if the field says where to look**, and no field's
+*value* says. Some notes do — `MAN-tools.v2`'s `build.extra_build_packages`
+note reads "The five the Dockerfile's nbis-builder stage installs, read from
+it" — but a note is prose with no status, which `manifests/README.md` makes a
+thing this repository does not build on. `INV-009` F-1 re-measured
+`build.setup`, `build.patch`, `build.make` and `build.artifact_copied` against
+the `Dockerfile`, and could do so only because a person wrote the comparison
+and named the file; this refinement puts them in class two on that ground.
 
 **Both fields that failed in `INV-009` are in class two, and that is not a
 coincidence.** Class one re-measures itself: whatever reads it must run the
@@ -148,11 +157,12 @@ are reported as *bound*, and nothing is read from them. When a pin does not
 match, they are reported as *stale*, by name, and that is a failure.
 
 **Class two: not checked, and reported by name.** The verifier does not guess
-where to look, and does not search the tree for a value — `INV-009` F-2
-measured why that fails: a naive search for the four package names of
-`extra_build_packages` finds all four in the `Dockerfile`, because the fourth
-is in a second builder stage the field is not about. A check that can be
-satisfied by the wrong file is worse than no check, because it reports a pass.
+where to look, and does not search the tree for a value — `INV-009` records why
+that fails, under block **D** of its "Reproducing this": a substring search for
+the four package names of `extra_build_packages` finds all four in the
+`Dockerfile`, because a second builder stage installs exactly that set and the
+field is not about that stage. A check that can be satisfied by the wrong file
+is worse than no check, because it reports a pass.
 
 So class two is reported, every run, as fields this mechanism cannot verify,
 with a count. **That count is the honest form of the gap `INV-009` found**, and
@@ -175,16 +185,24 @@ passed" over 42 of 332 fields is the arrangement being replaced.
 
 ## Decision 4 — when it runs, and what a failure does
 
-`INV-010` F-3 measured the cost: the tools 1187 ms in the image, all 3520
-corpus digests 6312 ms, the eight checksum lists 68 ms, a container 0.395 s,
-and `make check-tools` 1.652 s end to end. Everything this repository holds
-verifies in under eight seconds.
+`INV-010` F-3 measured the cost of the three operations that existed when it
+was written: the tools 1187 ms in the image, all 3520 corpus digests 6312 ms,
+the eight checksum lists 68 ms, a container 0.395 s, and `make check-tools`
+1.652 s end to end — 7.6 seconds between them. That is the order of magnitude
+this decision rests on, not a ceiling: a mechanism that digests the same 3520
+files itself rather than through `sha256sum` will cost more, and `docs/` records
+what the one built here actually costs.
 
-**So verification is cheap enough to be a precondition and is made one.**
+**So verification is cheap enough to be a precondition.** What that means
+today and what it will mean are different, and the difference is stated rather
+than blurred: a target exists and fails the command, and nothing yet has it as
+a prerequisite, because the only thing that would is a run, and decision 5
+below binds the run that is written next.
 
 - **A `make` target verifies every manifest**, and exits non-zero if any
-  check fails. It is in the `Makefile`, which `REF-005`'s container work made
-  the only place a `docker run` is written.
+  check fails. It is in the `Makefile`, which is where every `docker run` in
+  this repository is written; no refinement decides that, and the `Makefile`
+  and `docs/container.md` are where it is stated.
 - **A failure stops the command.** A check that does not stop anything is a
   check nobody acts on, which is `INV-004` B-3's finding about a sentinel
   score, one level up.
@@ -199,8 +217,10 @@ and does not start if verification fails.**
 
 The result contract already requires a run record to name every manifest it
 used. `INV-010` F-3's measurement removes the only argument against making that
-naming conditional on a check: at 7.6 seconds for everything, the cost is
-smaller than the cost of one image conversion in the run itself.
+naming conditional on a check: it timed the three operations available today at
+7.6 seconds between them, and a run that produces numbers over a corpus of 3520
+images will not notice that. No comparison with the cost of the run itself is
+offered here, because no INV has measured one.
 
 No run mechanism exists yet, so this decision binds the one that is written
 next rather than changing anything today. It is taken here because taking it
@@ -223,9 +243,10 @@ them hold, including both binary digests: most of what it says is still true of
 what is here, and the parts that are not are worth knowing about rather than
 declaring out of scope.
 
-**The consequence for the mechanism.** `INV-010` F-1 measured that
-`scripts/check_tools.sh` cannot be pointed at `MAN-tools.v1` at all: it dies
-with `KeyError: 'identity'`, because v1 predates compositions. So the verifier
+**The consequence for the mechanism.** `INV-010` F-1 measured what happens
+when `scripts/check_tools.sh` is pointed at `MAN-tools.v1`: it completes its
+first two sections and then dies in the third with `KeyError: 'identity'`,
+because v1 predates compositions and carries no `identity` block. So the verifier
 must not assume the shape of the newest manifest. It derives what it can check
 from what a manifest carries, and a manifest carrying no `identity` block is
 verified without one rather than refused.
