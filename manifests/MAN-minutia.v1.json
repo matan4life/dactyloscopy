@@ -1,0 +1,383 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:dactyloscopy:manifest:MAN-minutia.v1",
+  "title": "minutia.v1",
+  "description": "The canonical minutia record of the dactyloscopy repository, frozen as a JSON Schema before any reader or writer exists. Every numeric field is an integer: two implementations must agree on values exactly, with no tolerance. Decisions in quality/REF-008-minutia-canon-format.md; the facts they rest on are named in x-manifest.rests_on.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "canon",
+    "image",
+    "produced_by",
+    "conventions",
+    "minutiae",
+    "source_header"
+  ],
+  "properties": {
+    "canon": {
+      "description": "The format this file claims to be. Frozen for the life of v1.",
+      "const": "minutia.v1"
+    },
+    "image": {
+      "description": "The image the minutiae were extracted from, populated from the dataset manifest and never from a tool's output (REF-007 decision 1). This is the block that is read.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["dataset", "id", "width", "height", "resolution_dpi"],
+      "properties": {
+        "dataset": {
+          "description": "Dataset manifest id, <competition>/<subset>. Never a path.",
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9-]*/[A-Za-z0-9][A-Za-z0-9_-]*$"
+        },
+        "id": {
+          "description": "The image's identifier within that dataset. The identifier space belongs to the dataset manifest, not to this format.",
+          "type": "string",
+          "minLength": 1
+        },
+        "width": { "type": "integer", "minimum": 1 },
+        "height": { "type": "integer", "minimum": 1 },
+        "resolution_dpi": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "produced_by": {
+      "description": "The tool that produced these minutiae, and the properties of its output that a reader needs in order to check its own arithmetic.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "tool",
+        "binary_sha256",
+        "invocation",
+        "read_from",
+        "angle_levels"
+      ],
+      "properties": {
+        "tool": {
+          "description": "Tool and release, as <name>@<release>. A tool that reports no version of its own is identified by binary_sha256; the release names the artefact it was built from.",
+          "type": "string",
+          "minLength": 1
+        },
+        "binary_sha256": {
+          "description": "Digest of the binary as it sat in the image that produced this file.",
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "invocation": {
+          "description": "The command form, including every flag. A run that does not name the invocation has not named the tool (REF-005).",
+          "type": "string",
+          "minLength": 1
+        },
+        "read_from": {
+          "description": "Which of the tool's output files this record was built from. Deliberately not an enumeration: a source this format does not yet know of must not require a new schema version.",
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "angle_levels": {
+          "description": "The source's own angular quantisation: how many distinct directions it can express in a full circle. A fact about the source, not about the canon. It exists so that a reader's angle arithmetic can be checked against the grid the source actually used.",
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 11520
+        }
+      }
+    },
+    "conventions": {
+      "description": "The canon's own conventions, stated by every file rather than assumed by every reader. All five are constant for the life of v1: a file that needs different conventions is a different format.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "origin",
+        "angle_units",
+        "angle_full_circle",
+        "angle_direction",
+        "reliability_units"
+      ],
+      "properties": {
+        "origin": { "const": "top-left" },
+        "angle_units": { "const": "1/32 degree" },
+        "angle_full_circle": { "const": 11520 },
+        "angle_direction": {
+          "description": "The direction the angle points, named by the standard that defines it. What that direction is in absolute terms is an open question, tracked as D-3 (issue 7); how it relates to the native NBIS direction is D-4 (issue 8). The label is frozen here; its meaning is not settled by this manifest.",
+          "const": "iso-19794-2"
+        },
+        "reliability_units": { "const": "1/1000" }
+      }
+    },
+    "minutiae": {
+      "description": "A sequence in the source's order, not a set. Order is meaningful and nothing may sort it: two byte-exact round trips are the only external tests a reader and a writer can be held to (REF-006 decision 3). JSON Schema cannot express that the order carries meaning; uniqueItems is deliberately absent, and two identical entries are legal.",
+      "type": "array",
+      "minItems": 0,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["x", "y", "angle", "type", "quality"],
+        "properties": {
+          "x": {
+            "description": "Pixel column, origin top-left. That x is inside the image is an invariant this schema cannot express: see x-manifest.invariants.",
+            "type": "integer",
+            "minimum": 0
+          },
+          "y": {
+            "description": "Pixel row, origin top-left. Same limitation as x.",
+            "type": "integer",
+            "minimum": 0
+          },
+          "angle": {
+            "description": "Direction in units of 1/32 degree, on [0, 11519]. That the value lies on the source's own grid is checked below for the quantisations this format knows; for any other value of angle_levels it is not expressible.",
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 11519
+          },
+          "type": {
+            "description": "unknown is distinct from other: a tool that does not report the type is not reporting that the type is other.",
+            "enum": ["ending", "bifurcation", "other", "unknown"]
+          },
+          "quality": {
+            "description": "Observed, never derived from reliability. Absent-as-null is not permitted; the field is required.",
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "reliability": {
+            "description": "Present only when the source provides it, and then observed, never derived from quality. When the source provides none the key is absent; null is not a permitted value, which this schema does enforce.",
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1000
+          }
+        }
+      }
+    },
+    "source_header": {
+      "description": "What the source file carried that this format cannot reconstruct from its own fields. Preserved verbatim so that a byte-exact regeneration of the source remains possible, and never read as data (REF-007 decision 3). An empty object is the correct value for a source with no header. Its contents are constrained only in that no floating-point number may appear anywhere inside it.",
+      "type": "object",
+      "additionalProperties": { "$ref": "#/$defs/integerOnlyValue" }
+    }
+  },
+  "allOf": [
+    {
+      "$comment": "Invariant 1, for the quantisations this format knows: angle lies on the source's own grid, step = 11520 / angle_levels. mindtct native.",
+      "if": {
+        "type": "object",
+        "required": ["produced_by"],
+        "properties": {
+          "produced_by": {
+            "type": "object",
+            "required": ["angle_levels"],
+            "properties": { "angle_levels": { "const": 32 } }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "minutiae": {
+            "items": { "properties": { "angle": { "multipleOf": 360 } } }
+          }
+        }
+      }
+    },
+    {
+      "$comment": "ANSI INCITS 378-2004 as written by FingerJetFXOSE: 180 levels, step 64.",
+      "if": {
+        "type": "object",
+        "required": ["produced_by"],
+        "properties": {
+          "produced_by": {
+            "type": "object",
+            "required": ["angle_levels"],
+            "properties": { "angle_levels": { "const": 180 } }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "minutiae": {
+            "items": { "properties": { "angle": { "multipleOf": 64 } } }
+          }
+        }
+      }
+    },
+    {
+      "$comment": "ISO/IEC 19794-2:2005 as written by FingerJetFXOSE: 256 levels, step 45.",
+      "if": {
+        "type": "object",
+        "required": ["produced_by"],
+        "properties": {
+          "produced_by": {
+            "type": "object",
+            "required": ["angle_levels"],
+            "properties": { "angle_levels": { "const": 256 } }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "minutiae": {
+            "items": { "properties": { "angle": { "multipleOf": 45 } } }
+          }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "integerOnlyValue": {
+      "description": "Any JSON value that contains no floating-point number at any depth. Used for source_header, where the contents are opaque but the no-float rule still holds.",
+      "anyOf": [
+        { "type": ["string", "boolean", "null", "integer"] },
+        { "type": "array", "items": { "$ref": "#/$defs/integerOnlyValue" } },
+        {
+          "type": "object",
+          "additionalProperties": { "$ref": "#/$defs/integerOnlyValue" }
+        }
+      ]
+    }
+  },
+  "x-manifest": {
+    "$comment": "Not a JSON Schema keyword. Unrecognised keywords are ignored by a validator, so this block travels with the schema without changing what it validates. It exists because manifests/README.md requires that every number in a manifest carry a status, and a JSON Schema cannot carry one inside its own keywords.",
+    "manifest": "MAN-minutia.v1.json",
+    "issued": "2026-09-07",
+    "rests_on": [
+      "quality/INV-002-minutia-formats.md",
+      "quality/INV-003-fingerjetfxose-source-and-resolution.md",
+      "quality/INV-004-nbis-acknowledged-defects.md",
+      "quality/REF-006-canonical-minutia-record.md",
+      "quality/REF-007-image-metadata-and-baseline-tools.md",
+      "quality/REF-008-minutia-canon-format.md"
+    ],
+    "directory_contract": "manifests/README.md requires a manifest to name the INVs and REFs that produced it, to be immutable and versioned, and to give every number a status. The first two are met above. The third needed a reading, which REF-008 records: the four-status vocabulary governs values this repository asserts about the world, and a schema also contains bounds that assert nothing. Both kinds are enumerated below; the asserted ones carry a status and the structural ones are named as structural rather than given one.",
+    "asserted_numbers": {
+      "angle_full_circle": {
+        "value": 11520,
+        "status": "VERIFIED",
+        "note": "1/32 degree is the smallest unit in which the native, ANSI 378 and ISO 19794-2 angular grids are all whole numbers, so a full circle is 360 * 32. INV-002 F-16.",
+        "rests_on": "INV-002 F-16"
+      },
+      "angle_maximum": {
+        "value": 11519,
+        "status": "VERIFIED",
+        "note": "angle_full_circle - 1. The circle is closed, so 11520 is the same direction as 0 and only one of the two spellings is legal.",
+        "rests_on": "INV-002 F-16"
+      },
+      "angle_levels_native_step": {
+        "value": 360,
+        "status": "VERIFIED",
+        "note": "11520 / 32. mindtct exposes 32 distinct directions: INV-002 F-6 measured 32 distinct direction indices over 3946 minutiae, and INV-004 confirmed NUM_DIRECTIONS 16 with a half-circle unit of 180/16 degrees in the source.",
+        "rests_on": "INV-002 F-6, INV-002 F-8, INV-004"
+      },
+      "angle_levels_ansi_step": {
+        "value": 64,
+        "status": "VERIFIED",
+        "note": "11520 / 180. ANSI INCITS 378-2004 as written by FingerJetFXOSE carries 180 levels of 2 degrees: INV-003 F-1, arithmetic on the serializer confirmed at the pinned commit.",
+        "rests_on": "INV-003 F-1"
+      },
+      "angle_levels_iso_step": {
+        "value": 45,
+        "status": "VERIFIED",
+        "note": "11520 / 256. ISO/IEC 19794-2:2005 as written by FingerJetFXOSE carries 256 levels of 360/256 degrees: INV-003 F-1. What the standard's own text defines is not established here and is tracked as D-3, issue 7.",
+        "rests_on": "INV-003 F-1"
+      },
+      "angle_levels_maximum": {
+        "value": 11520,
+        "status": "VERIFIED",
+        "note": "A source cannot express more distinct directions than the canon has units. Equal to angle_full_circle for the same reason.",
+        "rests_on": "INV-002 F-16"
+      },
+      "quality_maximum": {
+        "value": 100,
+        "status": "VERIFIED",
+        "note": "The canon's declared scale, taken from the scale the sources use. Over the 3946 minutiae of one corpus the observed range was 1 to 99 with no value outside 0 to 100 (INV-002 F-9), and FingerJetFXOSE clamps its own quality at 100 (INV-003 S-6). Observing a range is not the same as knowing one; the declared scale is what a reader enforces, and a value outside it is a defect to raise rather than clamp.",
+        "rests_on": "INV-002 F-9, INV-003 S-6"
+      },
+      "reliability_maximum": {
+        "value": 1000,
+        "status": "VERIFIED",
+        "note": "The canon's declared scale. mindtct prints its reliability as a value on [0,1] with exactly three decimals (INV-002 F-9, and INV-004 confirms the %6.3f format in the source), so 1/1000 is the exact integer image of what the source states, with no rounding introduced by the canon.",
+        "rests_on": "INV-002 F-9, INV-004"
+      }
+    },
+    "structural_numbers": {
+      "$comment": "Bounds that assert nothing about the world. They are the format's own definition, and the four-status vocabulary does not apply to them.",
+      "minimum_0_for_x_y_angle_quality_reliability": "Zero is the least value each of these five fields may take. A negative coordinate, angle, quality or reliability has no meaning in this format.",
+      "minimum_1_for_width_height_resolution_dpi": "An image with a zero dimension or a zero resolution is not an image.",
+      "minimum_1_for_angle_levels": "A source expresses at least one direction.",
+      "minItems_1_for_read_from": "A record was built from at least one source file.",
+      "minItems_0_for_minutiae": "An image on which the extractor found nothing yields a valid record with zero minutiae, which is a designed value and not an error (REF-006).",
+      "minLength_1_for_strings": "An empty string is not an identifier, a tool name or a command.",
+      "length_64_in_binary_sha256_pattern": "The hexadecimal length of a SHA-256 digest."
+    },
+    "invariants": {
+      "enforced_by_this_schema": [
+        "Every numeric field is an integer, including at every depth inside source_header.",
+        "angle lies on [0, 11519].",
+        "x, y, quality and reliability are non-negative, and quality and reliability lie within their declared scales.",
+        "type is one of exactly four values, and unknown is distinct from other.",
+        "reliability is absent rather than null when the source provides none: the key is not required, its type is integer, and null therefore fails.",
+        "No property outside this schema may appear, at any level: additionalProperties is false throughout except inside source_header.",
+        "The five conventions are constants, so a file cannot silently declare a different scale.",
+        "Invariant 1 (angle on the source's grid) for angle_levels of 32, 180 and 256, by conditional subschemas: step 360, 64 and 45 respectively."
+      ],
+      "not_expressible_in_json_schema": [
+        {
+          "invariant": "angle % (11520 / angle_levels) == 0 for an arbitrary angle_levels",
+          "why": "JSON Schema has no arithmetic between two instance locations. The conditional subschemas above cover the three quantisations this format knows; a fourth source would validate against the bound on angle but not against its own grid.",
+          "enforced_instead": "Nowhere yet. This format is frozen before it has a producer, so nothing implements it. REF-008 records the check as a requirement on the first reader and writer, and it is the reason angle_levels is in the record at all."
+        },
+        {
+          "invariant": "0 <= x < image.width and 0 <= y < image.height",
+          "why": "The bound lives in a different part of the instance from the value it bounds, and JSON Schema cannot compare the two.",
+          "enforced_instead": "Nowhere yet, on the same terms. The lower bound is enforced above; only the upper bound is missing."
+        },
+        {
+          "invariant": "angle_levels divides 11520",
+          "why": "Divisibility of a constant by an instance value is not expressible. A source whose quantisation does not divide 11520 cannot be represented on this grid at all, so this is a precondition on a source, not a property of a file.",
+          "enforced_instead": "Nowhere yet. A source that fails it needs a new canon version, not a new file."
+        },
+        {
+          "invariant": "The order of minutiae carries meaning",
+          "why": "A JSON array is ordered, so the order survives; that it must not be reordered is a statement about readers and writers, not about instances.",
+          "enforced_instead": "By the round-trip test REF-006 decision 3 exists for, once there is something to test."
+        },
+        {
+          "invariant": "No floating-point spelling anywhere",
+          "why": "JSON Schema's integer type tests the value, not the lexical form: 44.0 has a zero fractional part and validates as an integer. This was checked rather than assumed, and it does validate.",
+          "enforced_instead": "By the canonical serialisation below, which writes every integer without a fractional part. A file received from elsewhere may spell an integer as 44.0 and this schema will accept it."
+        }
+      ]
+    },
+    "serialisation": {
+      "$comment": "Two different jobs, deliberately not conflated. REF-008 decision 4.",
+      "for_addressing": {
+        "purpose": "So that a canon file has a stable digest a run record can point at.",
+        "rules": [
+          "Object keys sorted by Unicode code point at every level.",
+          "Indent of exactly two spaces per level.",
+          "Line ending LF, and no other line ending anywhere.",
+          "Exactly one trailing newline at end of file.",
+          "No byte-order mark.",
+          "ASCII only: any character outside U+0000..U+007F is escaped."
+        ],
+        "digest": "SHA-256 of the resulting bytes."
+      },
+      "for_comparing_implementations": {
+        "purpose": "So that two readers written in different languages can be shown to agree.",
+        "rule": "The comparison is of parsed content, never of bytes.",
+        "why": "A byte comparison fails when someone changes an indent, which is a failure for an uninteresting reason. This repository has already refused that trade once, over the intermediate PNG, whose fidelity is checked on decoded pixels and never on encoded bytes."
+      }
+    },
+    "validation": {
+      "status": "VERIFIED",
+      "validator": "python-jsonschema 4.25.1, Draft202012Validator, in a throwaway container",
+      "checked": [
+        "check_schema passes: the file is a valid JSON Schema under draft 2020-12.",
+        "A hand-written conforming instance validates with zero errors.",
+        "Six further instances that must be accepted are accepted: zero minutiae; reliability absent; a step-64 angle at 180 levels; a step-45 angle at 256 levels; a source_header carrying integers; and a read_from naming a source this format does not know.",
+        "Twenty-nine deliberately malformed instances each fail, and each fails on the keyword expected of it.",
+        "Five instances that the schema is known not to catch were confirmed to be accepted, so that the list of what is not enforced is measured rather than assumed: x beyond image.width, y beyond image.height, an integer spelled 50.0, an angle_levels that does not divide 11520, and two identical minutiae in the sequence.",
+        "The instance used for validation is not committed: it contains a minutia, and this repository never commits one."
+      ]
+    },
+    "not_in_this_file": [
+      "Any minutia. The example that accompanied the brief for this format was minutia index 2 of FVC2002 101_1, carrying that print's real coordinates, angle, quality and reliability; committing it would have been an incident under the repository's first prohibition. No minutia-shaped record appears in this file, in an examples block or anywhere else.",
+      "Any reader, writer, or validation tooling. The format is frozen before it has a producer so that the first implementation conforms to it rather than defining it."
+    ]
+  }
+}
