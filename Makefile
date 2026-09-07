@@ -70,12 +70,12 @@ shell: ## Interactive session in the container, with the data mounted
 test: ## Run pytest in the container; needs no data
 	$(DOCKER) run --rm $(REPO_MOUNT) -w /work "$(IMAGE)" python -m pytest
 
-check-tools: ## Verify the external tools against manifests/MAN-tools.v1.json
+check-tools: ## Verify the tools in the image against manifests/MAN-tools.v2.json
 	@if [ -z "$(FVC_DB1_B)" ]; then \
 	  echo "FVC_DB1_B is not set, so nothing was checked."; \
 	  echo ""; \
 	  echo "It names the directory holding the FVC2002 Db1_b images, which the"; \
-	  echo "fixture in manifests/MAN-tools.v1.json was recorded against:"; \
+	  echo "fixture in manifests/MAN-tools.v2.json was recorded against:"; \
 	  echo ""; \
 	  echo "  make check-tools FVC_DB1_B=/path/to/FVC2002/Dbs/Db1_b"; \
 	  echo ""; \
