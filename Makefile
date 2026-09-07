@@ -25,7 +25,7 @@ DATA_MOUNTS := -v "$(LABDATA_HOST)/raw:/data/raw:ro" -v "$(LABDATA_HOST)/derived
 REPO_MOUNT := -v "$(REPO):/work"
 
 .DEFAULT_GOAL := help
-.PHONY: help image shell test check-tools
+.PHONY: help image shell test check-tools verify
 
 help: ## List the targets
 	@echo "Targets:"
@@ -33,7 +33,8 @@ help: ## List the targets
 	@echo ""
 	@echo "Variables:"
 	@echo "  IMAGE        image name and tag (currently $(IMAGE))"
-	@echo "  LABDATA      root of the data mounted into the container; required by shell"
+	@echo "  LABDATA      root of the data mounted into the container; required by shell,"
+	@echo "               and by verify if the corpus is to be checked"
 	@echo "  FVC_DB1_B    directory of FVC2002 Db1_b images; required by check-tools"
 
 image: ## Build the image and print its digest
@@ -69,6 +70,14 @@ shell: ## Interactive session in the container, with the data mounted
 # stopping on rather than a message.
 test: ## Run pytest in the container; needs no data
 	$(DOCKER) run --rm $(REPO_MOUNT) -w /work "$(IMAGE)" python -m pytest
+
+# LABDATA is optional here, and the difference is reported rather than hidden:
+# without it the corpus checks are printed as not run, with it every listed
+# digest is verified. quality/REF-014 decision 4 requires the skip to be
+# visible, because a skipped check reported as a pass is the failure the whole
+# mechanism exists to remove.
+verify: ## Verify every manifest against what it names; LABDATA adds the corpus
+	@if [ -n "$(LABDATA)" ]; then 	  $(DOCKER) run --rm $(REPO_MOUNT) -v "$(LABDATA_HOST)/raw:/data/raw:ro" 	    -w /work -e LABDATA=/data "$(IMAGE)" bash scripts/verify_manifests.sh; 	else 	  $(DOCKER) run --rm $(REPO_MOUNT) -w /work "$(IMAGE)" 	    bash scripts/verify_manifests.sh; 	fi
 
 check-tools: ## Verify the tools in the image against manifests/MAN-tools.v2.json
 	@if [ -z "$(FVC_DB1_B)" ]; then \
