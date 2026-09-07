@@ -1,0 +1,802 @@
+{
+  "manifest": "MAN-tools",
+  "version": 2,
+  "issued": "2026-09-07",
+  "supersedes": "manifests/MAN-tools.v1.json",
+  "produced_by": {
+    "refinements": [
+      "quality/REF-005-external-tool-provenance.md",
+      "quality/REF-010-external-tool-terms.md",
+      "quality/REF-011-fingerjetfxose-admission.md",
+      "quality/REF-012-fingerjetfxose-invocation.md",
+      "quality/REF-013-implementation-layout.md"
+    ],
+    "investigations": [
+      "quality/INV-003-fingerjetfxose-source-and-resolution.md",
+      "quality/INV-004-nbis-acknowledged-defects.md",
+      "quality/INV-006-external-tool-terms.md",
+      "quality/INV-007-fingerjetfxose-built.md",
+      "quality/INV-008-fingerjetfxose-terms.md"
+    ],
+    "note": "Version 2 does two things. It restates every tool's identity as a composition over named parts, which REF-011 decision 5 requires, and it adds a third tool. Version 1 is not edited and is not withdrawn: results produced against it are reproduced against it."
+  },
+  "what_changed_from_v1": {
+    "value": [
+      "Every tool carries an identity block: named parts, the encoding they are composed under, and the scalar that encoding hashes to. mindtct and bozorth3 become one-part compositions; nothing about either binary changed.",
+      "Every measurable value v1 carried was re-measured against the image this version was issued against, by scripts/check_tools.sh: the two binary digests, the linked libraries, the TIFF-to-PNG pixel identity, the mindtct fixture and its determinism, the whole bozorth3 matrix, its symmetry and its determinism. All of them matched.",
+      "One value did not: extra_build_packages. v1 recorded the set the builder stage installed at commit 7aa439f, when the source was cloned with git, and was not updated when commit 2ac93d4 replaced that clone with the checksummed NIST archive and replaced git with curl and unzip. Both tool entries carried the stale list. It is corrected here, in a new version file rather than by editing v1, and it is stated rather than smoothed over.",
+      "The fixture's dataset is now the subset id fvc2002/DB1_B from manifests/MAN-fvc2002.v1.json, in place of v1's directory name, which v1 marked UNVERIFIED against exactly this eventuality.",
+      "iso-extract is added: the caller REF-011 decision 1 requires this repository to own, and the FingerJetFXOSE library it links."
+    ],
+    "status": "VERIFIED"
+  },
+  "identity_scheme": {
+    "encoding": {
+      "value": "One part per line as label=value, each line terminated by a newline, in the order the tool's parts array gives; sha256 over those bytes.",
+      "status": "VERIFIED",
+      "note": "Fixed by REF-011 decision 5, which also fixes the order for the three-part case: library, caller_source, caller. A newline cannot occur inside a hex digest, so the concatenation is unambiguous and needs no length prefix or escaping."
+    },
+    "one_part_form": {
+      "value": "binary=<sha256>",
+      "status": "VERIFIED",
+      "note": "REF-011 decision 5. A tool that contains none of this repository's code has one part."
+    },
+    "composed_is_derived": {
+      "value": true,
+      "status": "VERIFIED",
+      "note": "The scalar is recomputed from the parts and cannot disagree with them. The parts belong here, where a value carries a status; the scalar is what a run record and a run: trailer carry, as a key to look the parts up by."
+    },
+    "why_this_manifest_records_rather_than_claims": {
+      "value": "Every field below is a measurement taken from the image this version was issued against, not a prediction about what a build will produce.",
+      "status": "VERIFIED",
+      "note": "REF-012 D states the rule for the one place it was tempting to break it: INV-007 F-4 measured which artefacts change with the build number, the caller did not exist when it measured, and nothing here claims on the caller's behalf. Where a value could only be attributed, it is UNVERIFIED and says to whom."
+    }
+  },
+  "tools": {
+    "mindtct": {
+      "role": "minutiae extractor",
+      "identity": {
+        "parts": {
+          "binary": {
+            "value": "4d587263e242781e97afe236f5c8c46f275eb617c42e47f34d969c536c122c53",
+            "status": "VERIFIED",
+            "note": "sha256 of /usr/local/bin/mindtct in the image this version was issued against. Re-measured, not carried over."
+          }
+        },
+        "composed_sha256": {
+          "value": "72be8e16c000c98ea9d655f526ef2fde569793eb812f85de15cbfde6e40e630a",
+          "status": "VERIFIED",
+          "note": "sha256 of the 72 bytes \"binary=4d587263e242781e97afe236f5c8c46f275eb617c42e47f34d969c536c122c53\\n\"."
+        }
+      },
+      "source": {
+        "kind": {
+          "value": "publisher archive, pinned by checksum",
+          "status": "VERIFIED"
+        },
+        "url": {
+          "value": "https://nigos.nist.gov/nist/nbis/nbis_v5_0_0.zip",
+          "status": "VERIFIED",
+          "note": "Served by the NIST Biometric Open Source Server over HTTPS with no registration, and listed on the NIGOS products page. The build fetches this URL directly."
+        },
+        "archive_sha256": {
+          "value": "0adf8ab0f6b0e4208de50ca00ba21d3d77112ecd66288757ddfed21f6bee92c3",
+          "status": "VERIFIED",
+          "note": "Checked before the archive is unpacked; sha256sum -c exits non-zero on a mismatch, which fails the build."
+        },
+        "archive_size_bytes": {
+          "value": 52595795,
+          "status": "VERIFIED"
+        },
+        "release": {
+          "value": "5.0.0",
+          "status": "VERIFIED",
+          "note": "The NIGOS page lists it as the stable version."
+        },
+        "release_date": {
+          "value": "2015-03-04",
+          "status": "VERIFIED",
+          "note": "The NIGOS page gives (03/04/2015). The server's Last-Modified header for the archive reads Tue, 03 Mar 2015 20:57:05 GMT, one day earlier; both were read directly and the page's date is taken as the release date."
+        },
+        "upstream": {
+          "value": "NIST NBIS",
+          "status": "VERIFIED",
+          "note": "The source is obtained from the publisher rather than corroborated through a third party: it is downloaded from nist.gov over HTTPS and its checksum is verified before use. This status rests on provenance of the download, not on any comparison against another copy."
+        },
+        "mirror_previously_used": {
+          "value": "https://github.com/lessandro/nbis at commit 3d3b05f0144b706bed56407957bc00779baf2fa5",
+          "status": "VERIFIED",
+          "note": "The recipe in build below was worked out against this mirror, which is why it is recorded rather than deleted. Compared against this archive: 3879 paths on both sides, none missing from either, 593 byte-identical, 3286 differing only in line endings (the mirror carries CRLF, the archive LF), and none differing in content. Built in the same directory, the mirror produces the byte-identical binary recorded below."
+        }
+      },
+      "build": {
+        "base_image": {
+          "value": "python:3.12-slim-bookworm@sha256:782412e85d0f0984994c290652577d4018aff08145c85b262bb63dc0c7522254",
+          "status": "VERIFIED",
+          "note": "Builder and runtime share this base, so the binary cannot need a newer glibc than the runtime provides."
+        },
+        "setup": {
+          "value": "./setup.sh /usr/local/nbis --without-X11 --64",
+          "status": "VERIFIED"
+        },
+        "patch": {
+          "value": "sed -i '142s/-O2 -w -ansi/-O2 -w -ansi -fcommon/' rules.mak",
+          "status": "VERIFIED",
+          "note": "rules.mak is generated by setup.sh. Without -fcommon the build fails in an2k/histogen with a multiple definition of histo_head, because GCC 10 made -fno-common the default. The Dockerfile asserts that line 142 carries the flag after patching."
+        },
+        "make": {
+          "value": "make config && make it",
+          "status": "VERIFIED",
+          "note": "The whole tree is built; the packages share libraries and pruning the build introduces failures of its own."
+        },
+        "extra_build_packages": {
+          "value": [
+            "build-essential",
+            "ca-certificates",
+            "cmake",
+            "curl",
+            "unzip"
+          ],
+          "status": "VERIFIED",
+          "note": "The five the Dockerfile's nbis-builder stage installs, read from it. v1 recorded build-essential, ca-certificates, cmake and git, which was the set at commit 7aa439f, when the source was cloned with git from a mirror; commit 2ac93d4 replaced that clone with the checksummed NIST archive and replaced git with curl and unzip, and v1 was not updated. The value is corrected here rather than carried forward, and the discrepancy is recorded rather than smoothed over. cmake is required by the openjp2 package, which make config builds before anything else."
+        },
+        "artifact_copied": {
+          "value": "/src/mindtct/bin/mindtct -> /usr/local/bin/mindtct",
+          "status": "VERIFIED",
+          "note": "One file crosses from the NBIS builder stage for this tool. No compiler, no source tree and no other NBIS tool reaches the runtime image."
+        }
+      },
+      "binary": {
+        "path": {
+          "value": "/usr/local/bin/mindtct",
+          "status": "VERIFIED"
+        },
+        "sha256": {
+          "value": "4d587263e242781e97afe236f5c8c46f275eb617c42e47f34d969c536c122c53",
+          "status": "VERIFIED",
+          "note": "Of the binary as it sits in the runtime image built from this Dockerfile. mindtct reports no version of its own, so this digest is its identity, and it is the tool's one identity part above."
+        },
+        "size_bytes": {
+          "value": 960024,
+          "status": "VERIFIED"
+        }
+      },
+      "runtime": {
+        "shared_libraries": {
+          "value": [
+            "libm.so.6",
+            "libc.so.6",
+            "ld-linux-x86-64.so.2"
+          ],
+          "status": "VERIFIED",
+          "note": "libpng and zlib are linked statically by the NBIS build, so the runtime image needs no additional packages for this tool."
+        }
+      },
+      "invocation": {
+        "command": {
+          "value": "mindtct <image.png> <output_root>",
+          "status": "VERIFIED"
+        },
+        "flags": {
+          "value": [],
+          "status": "VERIFIED",
+          "note": "Called with no flags. -m1 is deliberately not passed."
+        },
+        "input_format": {
+          "value": "PNG",
+          "status": "VERIFIED",
+          "note": "This build defines __NBIS_PNG__. TIFF and PGM are both refused with 'image type UNKNOWN : not supported', so a TIFF dataset is converted with Pillow .convert(\"L\") before it reaches the tool."
+        },
+        "outputs": {
+          "value": [
+            "brw",
+            "dm",
+            "hcm",
+            "lcm",
+            "lfm",
+            "min",
+            "qm",
+            "xyt"
+          ],
+          "status": "VERIFIED",
+          "note": "Eight files per input, all byte-identical across repeated runs on the same PNG."
+        }
+      },
+      "fixture": {
+        "dataset": {
+          "value": "fvc2002/DB1_B",
+          "status": "VERIFIED",
+          "note": "The subset id manifests/MAN-fvc2002.v1.json issues, replacing v1's directory name as v1's own note said it would. That manifest records under this subset that the fixture reproduces when the images are read from the corpus copy."
+        },
+        "image_digests": {
+          "value": "manifests/checksums/fvc2002/DB1_B.sha256",
+          "status": "VERIFIED",
+          "note": "Each case below is keyed by the file's stem in that list. The three source digests were re-verified against the mounted corpus before this version was issued."
+        },
+        "conversion": {
+          "value": "Pillow .convert(\"L\"), decoded pixels identical to the TIFF",
+          "status": "VERIFIED",
+          "note": "The PNG file itself is not checksummed: PNG encoding varies with the zlib and Pillow version while the decoded pixels do not."
+        },
+        "cases": {
+          "101_1": {
+            "source_sha256": {
+              "value": "746707dbf23a59eff97d80b66ca8ee2a010bc179e69ebe41336e3740307bbf04",
+              "status": "VERIFIED"
+            },
+            "minutiae": {
+              "value": 33,
+              "status": "VERIFIED"
+            },
+            "xyt_sha256": {
+              "value": "4aebdeeeab9fe3dd21f0bf2815df09f92da00c2c6ed6d906c0e2a61955b46437",
+              "status": "VERIFIED"
+            }
+          },
+          "101_2": {
+            "source_sha256": {
+              "value": "7419a15bddf0d67cfa04364b69a7f8f21396c4ac5a75ee0603ad337fe882a06e",
+              "status": "VERIFIED"
+            },
+            "minutiae": {
+              "value": 24,
+              "status": "VERIFIED"
+            },
+            "xyt_sha256": {
+              "value": "a9baeb93db9fe96b4a686032e5bb94fc044945081140b147471ee13015e611bc",
+              "status": "VERIFIED"
+            }
+          },
+          "102_1": {
+            "source_sha256": {
+              "value": "59cbe6a35067cc34ef8ab3fd82c24d6c44816cf77db46b72353ffc493c82c551",
+              "status": "VERIFIED"
+            },
+            "minutiae": {
+              "value": 62,
+              "status": "VERIFIED"
+            },
+            "xyt_sha256": {
+              "value": "ac7a7d3e878848d491e82ca488f7c1dd4fe99742d8ecac46b150ab60ead2c16e",
+              "status": "VERIFIED"
+            }
+          }
+        }
+      }
+    },
+    "bozorth3": {
+      "role": "matcher",
+      "identity": {
+        "parts": {
+          "binary": {
+            "value": "24fb809830f6a940dc27290b700b1d8e581a1f5c2c6bb9a97a856f96e8cdb287",
+            "status": "VERIFIED",
+            "note": "sha256 of /usr/local/bin/bozorth3 in the image this version was issued against. Re-measured, not carried over."
+          }
+        },
+        "composed_sha256": {
+          "value": "2c8f59c2f889bf90ed2c53e4eeca3556654bfb8dc222a432178d159a653de650",
+          "status": "VERIFIED",
+          "note": "sha256 of the 72 bytes \"binary=24fb809830f6a940dc27290b700b1d8e581a1f5c2c6bb9a97a856f96e8cdb287\\n\"."
+        }
+      },
+      "source": {
+        "kind": {
+          "value": "publisher archive, pinned by checksum",
+          "status": "VERIFIED"
+        },
+        "url": {
+          "value": "https://nigos.nist.gov/nist/nbis/nbis_v5_0_0.zip",
+          "status": "VERIFIED",
+          "note": "Served by the NIST Biometric Open Source Server over HTTPS with no registration, and listed on the NIGOS products page. The build fetches this URL directly."
+        },
+        "archive_sha256": {
+          "value": "0adf8ab0f6b0e4208de50ca00ba21d3d77112ecd66288757ddfed21f6bee92c3",
+          "status": "VERIFIED",
+          "note": "Checked before the archive is unpacked; sha256sum -c exits non-zero on a mismatch, which fails the build."
+        },
+        "archive_size_bytes": {
+          "value": 52595795,
+          "status": "VERIFIED"
+        },
+        "release": {
+          "value": "5.0.0",
+          "status": "VERIFIED",
+          "note": "The NIGOS page lists it as the stable version."
+        },
+        "release_date": {
+          "value": "2015-03-04",
+          "status": "VERIFIED",
+          "note": "The NIGOS page gives (03/04/2015). The server's Last-Modified header for the archive reads Tue, 03 Mar 2015 20:57:05 GMT, one day earlier; both were read directly and the page's date is taken as the release date."
+        },
+        "upstream": {
+          "value": "NIST NBIS",
+          "status": "VERIFIED",
+          "note": "The source is obtained from the publisher rather than corroborated through a third party: it is downloaded from nist.gov over HTTPS and its checksum is verified before use. This status rests on provenance of the download, not on any comparison against another copy."
+        },
+        "mirror_previously_used": {
+          "value": "https://github.com/lessandro/nbis at commit 3d3b05f0144b706bed56407957bc00779baf2fa5",
+          "status": "VERIFIED",
+          "note": "The recipe was worked out against this mirror before the publisher's archive was fetched. Compared against the archive: 3879 paths on both sides, none missing from either, 593 byte-identical, 3286 differing only in line endings, and none differing in content, so no file this tool compiles from differs between them."
+        }
+      },
+      "build": {
+        "base_image": {
+          "value": "python:3.12-slim-bookworm@sha256:782412e85d0f0984994c290652577d4018aff08145c85b262bb63dc0c7522254",
+          "status": "VERIFIED",
+          "note": "Builder and runtime share this base, so the binary cannot need a newer glibc than the runtime provides."
+        },
+        "setup": {
+          "value": "./setup.sh /usr/local/nbis --without-X11 --64",
+          "status": "VERIFIED"
+        },
+        "patch": {
+          "value": "sed -i '142s/-O2 -w -ansi/-O2 -w -ansi -fcommon/' rules.mak",
+          "status": "VERIFIED",
+          "note": "rules.mak is generated by setup.sh. Without -fcommon the build fails in an2k/histogen with a multiple definition of histo_head, because GCC 10 made -fno-common the default. The Dockerfile asserts that line 142 carries the flag after patching."
+        },
+        "make": {
+          "value": "make config && make it",
+          "status": "VERIFIED",
+          "note": "The whole tree is built; the packages share libraries and pruning the build introduces failures of its own."
+        },
+        "extra_build_packages": {
+          "value": [
+            "build-essential",
+            "ca-certificates",
+            "cmake",
+            "curl",
+            "unzip"
+          ],
+          "status": "VERIFIED",
+          "note": "The same five as mindtct, and stale in v1 for the same reason: one builder stage produces both binaries, and v1's bozorth3 entry copied the list mindtct's entry already carried."
+        },
+        "artifact_copied": {
+          "value": "/src/bozorth3/bin/bozorth3 -> /usr/local/bin/bozorth3",
+          "status": "VERIFIED",
+          "note": "Produced by the same make it as mindtct, in the same builder stage, from the same archive. Two files cross from that stage and nothing else."
+        }
+      },
+      "binary": {
+        "path": {
+          "value": "/usr/local/bin/bozorth3",
+          "status": "VERIFIED"
+        },
+        "sha256": {
+          "value": "24fb809830f6a940dc27290b700b1d8e581a1f5c2c6bb9a97a856f96e8cdb287",
+          "status": "VERIFIED",
+          "note": "Of the binary as it sits in the runtime image. bozorth3 reports no version of its own, so this digest is its identity, and it is the tool's one identity part above."
+        },
+        "size_bytes": {
+          "value": 57784,
+          "status": "VERIFIED"
+        }
+      },
+      "runtime": {
+        "shared_libraries": {
+          "value": [
+            "libm.so.6",
+            "libc.so.6",
+            "ld-linux-x86-64.so.2"
+          ],
+          "status": "VERIFIED",
+          "note": "Same as mindtct: the runtime image needs no additional package for this tool."
+        }
+      },
+      "invocation": {
+        "command": {
+          "value": "bozorth3 <probe.xyt> <gallery.xyt>",
+          "status": "VERIFIED",
+          "note": "Prints one integer score per pair on stdout."
+        },
+        "flags": {
+          "value": [],
+          "status": "VERIFIED",
+          "note": "Called with no flags. -m1 is deliberately not passed: it declares that the .xyt files are in the ANSI INCITS 378-2004 representation, and ours are written by mindtct without -m1, so they must be read without it. The two tools are called consistently."
+        },
+        "default_max_minutiae": {
+          "value": 150,
+          "status": "VERIFIED",
+          "note": "The -n default, read from the tool's own usage, which states [150] and a legal range of [0,200]. It caps the minutiae used from any file. It does not bind on the fixture below, where the counts are 33, 24 and 62, but it is silent and data-dependent: a file with more minutiae is truncated without a message."
+        },
+        "default_minminutiae": {
+          "value": 10,
+          "status": "VERIFIED",
+          "note": "The -A minminutiae default, read from the tool's own usage, which states [10]. Below this many minutiae the score is 0 rather than an error. The consequence is that a zero from a rejected image is indistinguishable in a score vector from a genuine non-match, so a run that does not record minutia counts alongside its scores cannot tell the two apart afterwards."
+        },
+        "overflow_sentinel": {
+          "value": 4000,
+          "status": "VERIFIED",
+          "note": "INV-004 B-3: on internal overflow the tool returns this value, which lies in the range a real score occupies, and says so only through a warning on an error stream. A run that discards stderr cannot tell this apart from a very strong match. Recorded here because REF-005 makes what a tool prints part of what a run has to read."
+        },
+        "input": {
+          "value": ".xyt files as written by mindtct without -m1",
+          "status": "VERIFIED"
+        }
+      },
+      "fixture": {
+        "dataset": {
+          "value": "fvc2002/DB1_B",
+          "status": "VERIFIED",
+          "note": "The subset id manifests/MAN-fvc2002.v1.json issues, replacing v1's directory name."
+        },
+        "image_digests": {
+          "value": "manifests/checksums/fvc2002/DB1_B.sha256",
+          "status": "VERIFIED"
+        },
+        "source_of_xyt": {
+          "value": "mindtct without -m1, on the same three images",
+          "status": "VERIFIED",
+          "note": "The minutia counts are 33, 24 and 62, all above the minminutiae floor and below the -n cap, so neither default binds on this fixture."
+        },
+        "pairs": {
+          "101_1 101_1": {
+            "value": 216,
+            "status": "VERIFIED"
+          },
+          "101_1 101_2": {
+            "value": 60,
+            "status": "VERIFIED"
+          },
+          "101_1 102_1": {
+            "value": 9,
+            "status": "VERIFIED"
+          },
+          "101_2 101_2": {
+            "value": 163,
+            "status": "VERIFIED"
+          },
+          "101_2 102_1": {
+            "value": 4,
+            "status": "VERIFIED"
+          },
+          "102_1 102_1": {
+            "value": 499,
+            "status": "VERIFIED"
+          }
+        },
+        "symmetry": {
+          "value": "score(a,b) == score(b,a) on all three off-diagonal pairs",
+          "status": "VERIFIED"
+        },
+        "determinism": {
+          "value": "five repeated runs of one pair return the same score",
+          "status": "VERIFIED"
+        }
+      }
+    },
+    "iso-extract": {
+      "role": "minutiae extractor, ISO/IEC 19794-2:2005 template",
+      "identity": {
+        "parts": {
+          "library": {
+            "value": "ba453c674a82f4e9dd74985a4840285a07e5681defcde790d32473a7f4de1bf1",
+            "status": "VERIFIED",
+            "note": "sha256 of /usr/local/lib/libFJFX.so in the image this version was issued against. It is also, byte for byte, the digest INV-007 F-2 recorded for the same artefact built at the same path with a different build number, which is what INV-007 F-4 predicted for this artefact."
+          },
+          "caller_source": {
+            "value": "782026178aee86bae9f4a3897da7a68664c0b941",
+            "status": "VERIFIED",
+            "note": "git blob id of implementation/tools/iso-extract.c, from git rev-parse. A blob id and not a digest of a working copy, because a checkout can transform bytes and a blob id cannot; and not a commit id, because the commit that issues a manifest cannot contain its own hash. REF-011 decision 5."
+          },
+          "caller": {
+            "value": "b198f4f9d7709f54d235f82805638d271d809978602029982e046b2262038c1a",
+            "status": "VERIFIED",
+            "note": "sha256 of /usr/local/bin/iso-extract in the image this version was issued against."
+          }
+        },
+        "composed_sha256": {
+          "value": "9dbf5f4c3564cd2df7019144f69b2fabdcd505d73dabc51512c04f5157dd8097",
+          "status": "VERIFIED",
+          "note": "sha256 of the 200 bytes \"library=<library>\\ncaller_source=<caller_source>\\ncaller=<caller>\\n\", the three values above in that order. Three parts and not one, because part of what runs this tool is this repository's: one digest over their library and our source could not tell a change in one from a change in the other."
+        }
+      },
+      "source": {
+        "kind": {
+          "value": "git commit with tree hash; no publisher-issued artefact",
+          "status": "VERIFIED",
+          "note": "REF-011 decision 3. This is a weaker kind of pin than the archive checksum the two NBIS tools carry, and it is recorded as a different kind rather than made to look alike. A commit id with its tree hash addresses content, but there is no artefact any publisher issued behind it, so what can be checked is that the tree is the tree, and what cannot be checked is that anybody published it."
+        },
+        "url": {
+          "value": "https://github.com/FingerJetFXOSE/FingerJetFXOSE.git",
+          "status": "VERIFIED"
+        },
+        "commit": {
+          "value": "1726ba08bf7f2137d2f861ac1ae124d5cd355eee",
+          "status": "VERIFIED",
+          "note": "Verified with git rev-parse HEAD in the builder stage, with test and not with echo, so a mismatch fails the build."
+        },
+        "tree": {
+          "value": "e523e7b7ad5ab6d6e8b0a6fd163696f13e4a8b48",
+          "status": "VERIFIED",
+          "note": "git rev-parse HEAD^{tree}, verified the same way. This is what makes the pin a statement about content rather than about a label."
+        },
+        "commit_date": {
+          "value": "2026-01-15",
+          "status": "VERIFIED",
+          "note": "INV-007 Method: Thu Jan 15 09:16:59 2026 -0500."
+        },
+        "tags_in_repository": {
+          "value": 0,
+          "status": "VERIFIED",
+          "note": "INV-007 Method. There is no tag anywhere in the repository, so there is no named release, and GitHub's generated tarballs are not used because their bytes are not stable across time."
+        },
+        "submodule": {
+          "value": "cxxtest at a19f85fdf90f97e16d6e3e7e3d2d68c31cd89e3c",
+          "status": "VERIFIED",
+          "note": "A fourth party: not this project and not the publisher of the other tools. Pinned by commit id in the same weaker way, and checked in the builder stage after the submodule update rather than taken from .gitmodules. It supplies the two test suites that gate the build; nothing it contains reaches the runtime image."
+        },
+        "upstream": {
+          "value": "FingerJetFXOSE",
+          "status": "VERIFIED"
+        },
+        "terms": {
+          "value": "LGPL v3 or later, with the conditions of COPYRIGHT.txt",
+          "status": "VERIFIED",
+          "note": "INV-008 F-2 and F-3 read the three top-level terms documents and quoted all ten conditions. INV-008 F-5 measured that 98 of 98 source files carry the grant. This field records what the source says; what follows from it for this repository is REF-010's, not this manifest's."
+        }
+      },
+      "build": {
+        "base_image": {
+          "value": "python:3.12-slim-bookworm@sha256:782412e85d0f0984994c290652577d4018aff08145c85b262bb63dc0c7522254",
+          "status": "VERIFIED",
+          "note": "The same base as the runtime and as the NBIS builder, for the same reason: a binary compiled here cannot need a newer glibc than the runtime provides."
+        },
+        "clone_path": {
+          "value": "/w/src",
+          "status": "VERIFIED",
+          "note": "Fixed in the recipe, which REF-011 decision 4 requires because INV-007 F-4 measured that two builds of this source at two paths produce different bytes. This path is the one INV-007 F-1 built at, chosen so that record's digests are a prediction; the library part above records that the prediction held."
+        },
+        "configure": {
+          "value": "cmake -G \"Unix Makefiles\" -D32BITS=OFF -D64BITS=ON -DFRFXLL_BUILD=0 /w/src/FingerJetFXOSE, run in /w/src/FingerJetFXOSE/build/Linux-x86_64/x64",
+          "status": "VERIFIED",
+          "note": "cmake is invoked directly rather than through the project's runCMake.sh, which accepts no extra define. The three arguments that script would have passed for the x64 target are passed unchanged, and the build directory is the one it would have created."
+        },
+        "build_number": {
+          "value": 0,
+          "status": "VERIFIED",
+          "note": "REF-012 D fixes the value; REF-011 decision 4 requires it to be passed rather than derived. Left to itself, cmake/version.cmake computes it from git rev-list --all | wc -l on the clone, which makes the output depend on how the clone was made rather than on what was built."
+        },
+        "make": {
+          "value": "make -j1",
+          "status": "VERIFIED"
+        },
+        "gate": {
+          "value": "./testFRFXLL && ./testFRFXLLInternals",
+          "status": "VERIFIED",
+          "note": "Upstream's own two suites, run from the distribution directory before anything is copied out. They report 91 and 137 tests and exit non-zero on a failure, so a regression in the pinned source stops the image from being built."
+        },
+        "compile_caller": {
+          "value": "gcc -std=c99 -O2 -Wall -Wextra -pedantic -I /w/src/FingerJetFXOSE/libFJFX/include -o /w/iso-extract /w/iso-extract.c -L /w/src/FingerJetFXOSE/dist/Linux-x86_64/x64 -lFJFX",
+          "status": "VERIFIED",
+          "note": "The source is implementation/tools/iso-extract.c, the only path .dockerignore admits into the build context, and its blob id is the caller_source part above. The compile emits no diagnostic."
+        },
+        "extra_build_packages": {
+          "value": [
+            "build-essential",
+            "ca-certificates",
+            "cmake",
+            "git"
+          ],
+          "status": "VERIFIED",
+          "note": "INV-007 F-1 measured this set: git is needed for the clone and the submodule, and neither curl nor unzip is needed. This is a separate builder stage from the NBIS one, which installs a different set."
+        },
+        "artifacts_copied": {
+          "value": [
+            "/w/src/FingerJetFXOSE/dist/Linux-x86_64/x64/libFJFX.so -> /usr/local/lib/libFJFX.so",
+            "/w/iso-extract -> /usr/local/bin/iso-extract"
+          ],
+          "status": "VERIFIED",
+          "note": "Two files cross from this stage and nothing else, which is exactly what REF-011 decision 2 admits. The eleven other artefacts INV-007 F-2 lists stay behind, fjfxSample among them: REF-011 decision 2 excludes it, and INV-007 F-6 is why."
+        }
+      },
+      "binary": {
+        "caller_path": {
+          "value": "/usr/local/bin/iso-extract",
+          "status": "VERIFIED"
+        },
+        "caller_sha256": {
+          "value": "b198f4f9d7709f54d235f82805638d271d809978602029982e046b2262038c1a",
+          "status": "VERIFIED"
+        },
+        "caller_size_bytes": {
+          "value": 16656,
+          "status": "VERIFIED"
+        },
+        "library_path": {
+          "value": "/usr/local/lib/libFJFX.so",
+          "status": "VERIFIED"
+        },
+        "library_sha256": {
+          "value": "ba453c674a82f4e9dd74985a4840285a07e5681defcde790d32473a7f4de1bf1",
+          "status": "VERIFIED"
+        },
+        "library_size_bytes": {
+          "value": 395944,
+          "status": "VERIFIED"
+        },
+        "library_version_reported": {
+          "value": "none read",
+          "status": "UNVERIFIED",
+          "note": "The library exposes fjfx_get_pid, which INV-007 records it did not call. No version string is read from either file, so the digests above are the identity, as they are for the two NBIS tools."
+        }
+      },
+      "runtime": {
+        "library_resolution": {
+          "value": "soname libFJFX.so; the caller's only NEEDED entry, with no RPATH and no RUNPATH; resolved by ldconfig in the runtime image",
+          "status": "VERIFIED",
+          "note": "The builder stage asserts each half of this with readelf: that the library carries that soname, that the caller records it and nothing else of this project, and that the caller carries neither RPATH nor RUNPATH. So nothing in the caller points into the builder stage's directory tree, and /usr/local/lib is where the loader finds the library."
+        },
+        "caller_shared_libraries": {
+          "value": [
+            "libFJFX.so",
+            "libc.so.6",
+            "ld-linux-x86-64.so.2"
+          ],
+          "status": "VERIFIED",
+          "note": "From ldd in the runtime image. Not libm: unlike the two NBIS tools, this one links no maths library."
+        },
+        "library_shared_libraries": {
+          "value": [
+            "libc.so.6",
+            "ld-linux-x86-64.so.2"
+          ],
+          "status": "VERIFIED",
+          "note": "The library needs nothing the base image does not already carry, so the runtime installs no package for this tool."
+        }
+      },
+      "invocation": {
+        "command": {
+          "value": "iso-extract <image.pgm> <template.ist>",
+          "status": "VERIFIED",
+          "note": "Two arguments and no flags. REF-012 C makes the invocation part of the tool's identity, and INV-003 F-1 is why it matters here in particular: the same library and the same image, asked for two different formats, give two different angular grids."
+        },
+        "flags": {
+          "value": [],
+          "status": "VERIFIED",
+          "note": "There are none. The two parameters that vary the result are compiled in, not passed, so that no run can vary them by accident."
+        },
+        "declared_resolution_dpi": {
+          "value": 500,
+          "status": "VERIFIED",
+          "note": "REF-012 A. Passed for every image whatever a corpus says about itself, and it is not an argument. INV-003 F-4 records that 500 is the one declared value at which the export resolution the caller's argument produces equals the library's own default, so it is the one value at which the two cannot disagree."
+        },
+        "output_format": {
+          "value": "ISO/IEC 19794-2:2005",
+          "status": "VERIFIED",
+          "note": "REF-012 B, passed as FJFX_FMD_ISO_19794_2_2005 (0x01010001). Not ANSI INCITS 378-2004: INV-003 F-1 measures that the two carry different angular grids, 256 levels of 1.40625 degrees against 180 levels of 2 degrees, so a number computed from one is not comparable with a number computed from the other."
+        },
+        "input_format": {
+          "value": "binary PGM (P5), 8-bit greyscale, maximum value 255",
+          "status": "VERIFIED",
+          "note": "A '#' comment is accepted wherever the format allows one. A file with a byte more or a byte less than width * height of raster is refused, which is what fixes the reader's buffer to the byte."
+        },
+        "outputs": {
+          "value": [
+            "the template file named by the second argument, and nothing else"
+          ],
+          "status": "VERIFIED",
+          "note": "It is created only after the extraction has succeeded, so a failure leaves nothing behind for a later step to pick up."
+        },
+        "exit_codes": {
+          "value": [
+            "0 - a template was written",
+            "2 - wrong number of arguments",
+            "3 - the input cannot be opened or read",
+            "4 - the magic is not P5",
+            "5 - the header ends early, or a field is not a number",
+            "6 - the maximum value is not 255",
+            "7 - width or height is zero or above 65535",
+            "8 - fewer pixel bytes than width times height",
+            "9 - bytes present after the pixel data",
+            "10 - an allocation failed",
+            "11 - the library refused the image",
+            "12 - the template could not be written"
+          ],
+          "status": "VERIFIED",
+          "note": "REF-012 C makes the exit codes part of the invocation a run reads. Every code except 10 is exercised by tests/test_iso_extract.py against a file that really produces it; 10 is the allocation failure, which no test provokes. The ground for distinct codes is INV-004 B-3: a run that could only see non-zero could not tell a broken file from a broken tool."
+        },
+        "diagnostics": {
+          "value": "every failure writes one line to standard error, beginning \"iso-extract: \"; standard output is never written to",
+          "status": "VERIFIED"
+        }
+      },
+      "fixture": {
+        "dataset": {
+          "value": "fvc2002/DB1_B",
+          "status": "VERIFIED",
+          "note": "The same three images the two NBIS tools are fixtured against, so that the three tools are measured on one set."
+        },
+        "image_digests": {
+          "value": "manifests/checksums/fvc2002/DB1_B.sha256",
+          "status": "VERIFIED",
+          "note": "The three source digests were re-verified against the mounted corpus before this version was issued."
+        },
+        "conversion": {
+          "value": "Pillow .convert(\"L\") saved as binary PGM; header 'P5\\n388 374\\n255\\n', 145127 bytes, no comment",
+          "status": "VERIFIED",
+          "note": "INV-007 F-7 measured that this writer emits no comment, so the comment branch of the reader is never taken on this repository's own path; the test suite is what exercises it."
+        },
+        "cases": {
+          "101_1": {
+            "source_sha256": {
+              "value": "746707dbf23a59eff97d80b66ca8ee2a010bc179e69ebe41336e3740307bbf04",
+              "status": "VERIFIED"
+            },
+            "minutiae": {
+              "value": 25,
+              "status": "VERIFIED",
+              "note": "Read from offset 27 of the template, which is where INV-007 F-8 derived the count to be from the serializer's own lines."
+            },
+            "template_bytes": {
+              "value": 180,
+              "status": "VERIFIED"
+            },
+            "template_sha256": {
+              "value": "eb34422b99203d9d2cac3ce65756401927e5f2033bf252abce102429c7d7d07b",
+              "status": "VERIFIED"
+            }
+          },
+          "101_2": {
+            "source_sha256": {
+              "value": "7419a15bddf0d67cfa04364b69a7f8f21396c4ac5a75ee0603ad337fe882a06e",
+              "status": "VERIFIED"
+            },
+            "minutiae": {
+              "value": 17,
+              "status": "VERIFIED"
+            },
+            "template_bytes": {
+              "value": 132,
+              "status": "VERIFIED"
+            },
+            "template_sha256": {
+              "value": "2ad547355939d68693c7206ec1147f44c5f115bf874c25d1e4b1db40b172acc3",
+              "status": "VERIFIED"
+            }
+          },
+          "102_1": {
+            "source_sha256": {
+              "value": "59cbe6a35067cc34ef8ab3fd82c24d6c44816cf77db46b72353ffc493c82c551",
+              "status": "VERIFIED"
+            },
+            "minutiae": {
+              "value": 60,
+              "status": "VERIFIED"
+            },
+            "template_bytes": {
+              "value": 390,
+              "status": "VERIFIED"
+            },
+            "template_sha256": {
+              "value": "5cdd58272e100e6441f6c3385080151919c473b90392c24e0fed4ba60a065072",
+              "status": "VERIFIED"
+            }
+          }
+        },
+        "record_length_relation": {
+          "value": "template_bytes == 24 + 6 + 6 * minutiae, on all three cases",
+          "status": "VERIFIED",
+          "note": "The relation INV-007 F-8 measured. It makes the byte at offset 27 and the file length agree independently of each other. REF-011's open list records that INV-003 F-2's split of those 30 bytes is wrong while this sum is right; nothing here rests on the split."
+        },
+        "determinism": {
+          "value": "three repeated runs on one image write byte-identical templates",
+          "status": "VERIFIED"
+        },
+        "corroboration": {
+          "value": "All three template digests equal the ones INV-007 F-8 recorded for its reference reader, byte for byte.",
+          "status": "VERIFIED",
+          "note": "That reader was an instrument of INV-007 and was not adopted; it is not in this image and no file here descends from it. The agreement is therefore an independent reproduction: a C program compiled here and a Python program written there, given the same three images, produce the same three templates. The same table records what the upstream sample produces from the same images, and it is not this."
+        }
+      }
+    }
+  },
+  "not_in_this_manifest": {
+    "value": [
+      "Any minutia: no coordinate, no angle, no type, no quality, and no template byte. Counts, sizes, digests and exit codes only.",
+      "Any acknowledgement of an external tool. REF-011 decision 7 puts that in docs/ and blocks it until a record reads the terms; INV-008 has now read them, and the acknowledgement is still not this manifest's to write.",
+      "Any claim about what a build will produce. Every value here was measured after the fact."
+    ],
+    "status": "VERIFIED"
+  }
+}
