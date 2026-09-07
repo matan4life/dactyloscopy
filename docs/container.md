@@ -7,7 +7,9 @@ command that produced a number can be read back from the tree rather than
 from a shell history.
 
 Every command below was run on 2026-09-06 and the output shown is what it
-printed.
+printed, except where a section says it was re-captured on 2026-09-07, which
+is when the image gained a third tool. A section that was re-captured says so
+and says what it used to claim.
 
 ## The machine it was checked on
 
@@ -137,34 +139,38 @@ policy depends on.
 The check is of the mounts, not of any data: no dataset was mounted, and
 `docs/data.md` says why none may live in the repository.
 
-### 4. `make test` runs pytest and exits 0 on an empty suite
+### 4. `make test` runs pytest, and a failing test fails the target
+
+Re-captured on 2026-09-07. Until then there was no suite, and this section
+recorded that the target translated pytest's exit 5 — it collected nothing —
+into success. There is a suite now, so that translation was removed: collecting
+nothing would mean the mount or the suite is wrong, and `make test` reports it.
 
     $ make test
-    collected 0 items
+    MSYS_NO_PATHCONV=1 docker run --rm -v "D:/My PET Projects/dactyloscopy:/work" -w /work "dactyloscopy:dev" python -m pytest
+    ============================= test session starts ==============================
+    platform linux -- Python 3.12.14, pytest-9.1.1, pluggy-1.6.0
+    rootdir: /work
+    collected 22 items
 
-    ============================ no tests ran in 0.06s =============================
+    tests/test_iso_extract.py ......................                         [100%]
 
-    pytest exits 5 when it collects nothing, and there is no suite in
-    the tree yet, so that is the expected state rather than a failure.
+    ============================== 22 passed in 0.40s ==============================
     $ echo $?
     0
 
-pytest exits 5 when it collects nothing, which `make` would otherwise report
-as a failure. The target translates that one code into success and leaves
-every other code alone. A failing test still fails the target:
+A failing test fails the target:
 
-    $ cat > test_sanity_probe.py <<'EOF'
-    def test_that_fails():
-        assert 1 == 2
-    EOF
+    $ printf 'def test_that_fails():\n    assert 1 == 2\n' > tests/test_sanity_probe.py
     $ make test
-    FAILED test_sanity_probe.py::test_that_fails - assert 1 == 2
-    ============================== 1 failed in 0.11s ===============================
-    make: *** [Makefile:64: test] Error 1
+    FAILED tests/test_sanity_probe.py::test_that_fails - assert 1 == 2
+    ========================= 1 failed, 22 passed in 0.51s =========================
+    make: *** [Makefile:71: test] Error 1
 
 The probe file was deleted afterwards and is not in the tree.
 
-`test` mounts the repository and nothing else, so it needs no `LABDATA`.
+`test` mounts the repository and nothing else, so it needs no `LABDATA`. What
+the suite checks is `docs/tools.md`'s subject, not this page's.
 
 ### 5. `make shell` without `LABDATA` starts nothing
 
@@ -190,24 +196,41 @@ would name a path rather than the variable that has to be set.
 
 ### 6. `make help` lists every target
 
+Re-captured on 2026-09-07. The listing here had gone stale: `check-tools` and
+`FVC_DB1_B` existed and were not in it.
+
     $ make
     Targets:
-      help     List the targets
-      image    Build the image and print its digest
-      shell    Interactive session in the container, with the data mounted
-      test     Run pytest in the container; needs no data
+      help         List the targets
+      image        Build the image and print its digest
+      shell        Interactive session in the container, with the data mounted
+      test         Run pytest in the container; needs no data
+      check-tools  Verify the tools in the image against manifests/MAN-tools.v2.json
 
     Variables:
-      IMAGE     image name and tag (currently dactyloscopy:dev)
-      LABDATA   root of the data mounted into the container; required by shell
+      IMAGE        image name and tag (currently dactyloscopy:dev)
+      LABDATA      root of the data mounted into the container; required by shell
+      FVC_DB1_B    directory of FVC2002 Db1_b images; required by check-tools
 
 `help` is the default goal, so `make` with no argument prints the menu rather
-than doing something.
+than doing something. The listing is generated from the `##` comments in the
+`Makefile`, so a target added without one is invisible here; that is the only
+way this section can go stale again.
 
 ## What the image does not contain
 
-No C toolchain, no matcher, and no copy of the repository. The Dockerfile has
-no `COPY`, and `.dockerignore` excludes the whole build context, so nothing
-from the working tree is uploaded to the daemon at build time. Code reaches
-the container through the `/work` bind mount, which is why an edit takes
-effect without a rebuild.
+No C toolchain, no build tree, and no copy of the repository. `docs/tools.md`
+records the search that establishes it and what it does find: three tools and
+one shared library.
+
+Corrected on 2026-09-07. This paragraph used to say "no matcher", which
+stopped being true when `bozorth3` was added, and that the Dockerfile has no
+`COPY` and `.dockerignore` excludes the whole build context, which stopped
+being true when the caller's source had to reach the daemon to be compiled.
+
+What holds now: `.dockerignore` excludes the whole context and then admits one
+file back by name, `implementation/tools/iso-extract.c`, and `docs/tools.md`
+records the measurement of what the daemon actually receives — that one file
+and nothing else. Everything else, this repository's own code included,
+reaches the container through the `/work` bind mount, which is why an edit
+takes effect without a rebuild.

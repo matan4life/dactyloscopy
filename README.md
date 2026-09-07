@@ -5,12 +5,23 @@ produces can be traced to the data, the protocol, the metric definition and
 the code revision that produced it. The accounting is the product; the
 science is built on top of it.
 
-## Status: skeleton
+## Status: tools, no run
 
-This repository was created on 2026-09-03. It holds the licensing, citation
-metadata, issue taxonomy, directory contracts, the data policy and the commit
-convention: documents only, nothing executable. No measurement has been made
-inside it yet: there is no code, no manifest, no run and no number to cite.
+This repository was created on 2026-09-03 and this section was last corrected
+on 2026-09-07. It held documents only until 2026-09-06; that is no longer the
+state, and the sentence saying so stood for a day longer than it was true.
+
+What exists now: the licensing, citation metadata, issue taxonomy, directory
+contracts, the data policy and the commit convention it started with; the
+investigation and refinement chain in `quality/`; four frozen manifests, two
+of them versions of the tools manifest, one a corpus and one the minutia canon
+format; a container image pinned by digest, carrying two NBIS tools and one
+extractor this repository drives through a caller of its own; the source of
+that caller, and a test suite that holds it to what it reads.
+
+What does not exist: a protocol, a metric, a run, a score vector, and any
+number to cite. No comparison has been made inside this system.
+
 Nothing is carried over from an earlier codebase.
 
 ## The record: INV -> REF -> MAN
@@ -54,7 +65,9 @@ read-only from outside the tree and addressed by manifest id, never by path.
 
 What will be published instead: per-file checksums, pair lists and score
 vectors, from which every metric will be recomputable without the images.
-Nothing is published yet — there is no manifest, no run and no score vector.
+The checksums exist: `manifests/checksums/fvc2002/` lists every image in
+the corpus by digest and `manifests/MAN-fvc2002.v1.json` names the subsets.
+There is no run, so there is no pair list and no score vector yet.
 See [docs/data.md](docs/data.md).
 
 ## Layout
@@ -62,6 +75,8 @@ See [docs/data.md](docs/data.md).
 ```
 manifests/        frozen machine-readable manifests, immutable and versioned
 quality/          the INV and REF chain
+implementation/   the code a run executes and the source of what it invokes
+tests/            tests, run by pytest inside the image
 experiments/      experiment declarations
 workflow/         rules for derived data
 runs/             run records and the observations that support claims
@@ -71,15 +86,26 @@ LICENSES/         the CC BY 4.0 text; the MIT text is in LICENSE at the root
 .github/          issue forms
 ```
 
-`manifests/`, `quality/`, `experiments/`, `workflow/`, `runs/` and `scripts/`
-each carry a `README.md` stating what belongs in that directory and what does
-not.
+`manifests/`, `quality/`, `implementation/`, `implementation/tools/`,
+`tests/`, `experiments/`, `workflow/`, `runs/` and `scripts/` each carry a
+`README.md` stating what belongs in that directory and what does not. A
+directory is created by the commit that first puts a file in it, and its
+contract arrives with it.
 
 ## Development
 
-The implementation language and toolchain are not chosen yet. That decision
-arrives together with the container image, and is recorded as a refinement
-before any code appears.
+Python 3.12 for code a run executes in the container's own process, and C for
+source that links a third-party library and crosses into the runtime image as
+a binary. `pytest` is the test runner. All three are the versions the image
+pins, and the choice is recorded in
+[quality/REF-013-implementation-layout.md](quality/REF-013-implementation-layout.md),
+which also decides the split between `implementation/library/` and
+`implementation/tools/` and why there is no packaging file.
+
+Everything runs inside the image `make image` builds: `make test` for the
+suite, `make check-tools` to verify the tools against their manifest. What
+those printed is in [docs/tools.md](docs/tools.md) and
+[docs/container.md](docs/container.md).
 
 ## Citation
 
@@ -97,10 +123,11 @@ Two licences apply. Code is licensed MIT, and its text is in
 documentation, the record chain in `quality/`, manifests, experiment
 declarations, run records and the observations that support a claim — is
 licensed CC BY 4.0, and its text is in
-[LICENSES/CC-BY-4.0.txt](LICENSES/CC-BY-4.0.txt). There is no code in the
-repository yet, so CC BY 4.0 is what applies to the contents today. The two
-licence texts themselves are reproduced on their own terms and are not under
-CC BY 4.0.
+[LICENSES/CC-BY-4.0.txt](LICENSES/CC-BY-4.0.txt). Both now apply to real
+files: the caller under `implementation/`, the suite under `tests/` and the
+scripts under `scripts/` are code, and everything else in the tree is a
+document. The two licence texts themselves are reproduced on their own terms
+and are not under CC BY 4.0.
 
 Attribution is satisfied by citing this repository as
 [CITATION.cff](CITATION.cff) describes, and by the DOI once a release has
