@@ -63,16 +63,12 @@ shell: ## Interactive session in the container, with the data mounted
 	fi
 	$(DOCKER) run --rm -it $(REPO_MOUNT) $(DATA_MOUNTS) -w /work "$(IMAGE)" bash
 
+# There is a suite now, so pytest's exit 5 — it collected nothing — is no
+# longer the expected state and is not swallowed. It would mean the mount, the
+# working directory or the suite itself is wrong, and that is a failure worth
+# stopping on rather than a message.
 test: ## Run pytest in the container; needs no data
-	@$(DOCKER) run --rm $(REPO_MOUNT) -w /work "$(IMAGE)" python -m pytest; \
-	  status=$$?; \
-	  if [ $$status -eq 5 ]; then \
-	    echo ""; \
-	    echo "pytest exits 5 when it collects nothing, and there is no suite in"; \
-	    echo "the tree yet, so that is the expected state rather than a failure."; \
-	    exit 0; \
-	  fi; \
-	  exit $$status
+	$(DOCKER) run --rm $(REPO_MOUNT) -w /work "$(IMAGE)" python -m pytest
 
 check-tools: ## Verify the external tools against manifests/MAN-tools.v1.json
 	@if [ -z "$(FVC_DB1_B)" ]; then \

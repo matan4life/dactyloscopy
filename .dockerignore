@@ -1,9 +1,17 @@
-# Nothing is copied into the image: the Dockerfile has no COPY, because the
-# code arrives through the /work bind mount. The build context is therefore
-# excluded in full, so that neither the .git directory nor a stray data file
-# is ever sent to the daemon.
+# The build context is excluded in full, and then one file is admitted back by
+# name. Nothing else is sent to the daemon: not the .git directory, not a data
+# file that strayed into the tree, not the repository's own code, which arrives
+# through the /work bind mount rather than through a COPY.
 #
 # The exclusion is not cosmetic. A build context is uploaded before the first
 # instruction runs, so a file that must never leave the machine would leave it
 # here, before any rule in the Dockerfile could apply.
+#
+# The one exception is the caller in implementation/tools/, which quality/
+# REF-011 decision 2 requires to be compiled in a builder stage and copied into
+# the runtime, so its source has to reach the daemon. It is admitted by its
+# exact path and not by a pattern: "!implementation/tools/*.c" would admit a
+# file nobody has read yet, and the point of excluding everything is that what
+# is sent is a list somebody wrote down.
 *
+!implementation/tools/iso-extract.c

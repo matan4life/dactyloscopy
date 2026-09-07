@@ -66,6 +66,102 @@ RUN sed -i '142s/-O2 -w -ansi/-O2 -w -ansi -fcommon/' rules.mak \
 RUN make config && make it
 
 
+# The second builder stage. It compiles FingerJetFXOSE and the caller this
+# repository drives it with, and is thrown away; two files cross into the
+# runtime, which is what quality/REF-011 decision 2 admits and no more.
+#
+# It is a separate stage from the NBIS builder, not an addition to it, because
+# the two share no source, no toolchain flag and no failure: a break in one
+# would otherwise invalidate the other's cache and read as a break in both.
+FROM python:3.12-slim-bookworm@sha256:782412e85d0f0984994c290652577d4018aff08145c85b262bb63dc0c7522254 AS fjfx-builder
+
+# quality/INV-007 F-1 measured what this build needs beyond the NBIS stage's
+# set: build-essential, ca-certificates and cmake, and additionally git, for
+# the clone and the submodule. It needs neither curl nor unzip. binutils comes
+# with build-essential and supplies the readelf below.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        build-essential \
+        ca-certificates \
+        cmake \
+        git \
+    && rm -rf /var/lib/apt/lists/*
+
+# The pin. quality/INV-007 records under Method that this project publishes no
+# archive and carries no tag at all, so there is no file to checksum the way
+# the NBIS archive above is checksummed. The pin is therefore a commit id — and
+# a commit id names a tree, which is what makes it a statement about content
+# rather than about a label, so the tree is verified too. Both checks are
+# "test", not "echo": a mismatch stops the build.
+#
+# The submodule is a fourth party. quality/INV-008 F-7 records its terms; it is
+# pinned by commit id in the same way, and checked after the update rather than
+# assumed from .gitmodules.
+ARG FJFX_REPO=https://github.com/FingerJetFXOSE/FingerJetFXOSE.git
+ARG FJFX_COMMIT=1726ba08bf7f2137d2f861ac1ae124d5cd355eee
+ARG FJFX_TREE=e523e7b7ad5ab6d6e8b0a6fd163696f13e4a8b48
+ARG CXXTEST_COMMIT=a19f85fdf90f97e16d6e3e7e3d2d68c31cd89e3c
+
+# The clone path is fixed in the recipe, and it is /w/src rather than anything
+# shorter, for a reason quality/INV-007 F-4 measured: two builds of this source
+# at two different paths produce different bytes, so the path is a variable of
+# the output and a recipe that leaves it to chance does not reproduce. /w/src is
+# the path INV-007 F-1 built at, which turns that record's artefact digests into
+# a prediction this build either reproduces or contradicts. docs/tools.md says
+# which happened.
+RUN git clone --no-checkout "${FJFX_REPO}" /w/src \
+    && cd /w/src \
+    && git checkout --detach "${FJFX_COMMIT}" \
+    && test "$(git rev-parse HEAD)" = "${FJFX_COMMIT}" \
+    && test "$(git rev-parse HEAD^{tree})" = "${FJFX_TREE}" \
+    && git submodule update --init --recursive \
+    && test "$(git -C cxxtest rev-parse HEAD)" = "${CXXTEST_COMMIT}"
+
+# cmake is invoked directly rather than through the project's runCMake.sh,
+# because that script accepts no extra define and quality/REF-012 D requires
+# -DFRFXLL_BUILD to be passed explicitly. The three arguments runCMake.sh would
+# have passed for the x64 target are passed here unchanged, and the build
+# directory is the one it would have created, so the only difference is the
+# define and the empty string it passes unquoted.
+#
+# quality/REF-012 D fixes the value at 0. The project's own version.cmake would
+# otherwise set it from "git rev-list --all | wc -l" on the clone, which makes
+# the output depend on how the clone was made rather than on what was built.
+WORKDIR /w/src/FingerJetFXOSE/build/Linux-x86_64/x64
+RUN cmake -G "Unix Makefiles" -D32BITS=OFF -D64BITS=ON -DFRFXLL_BUILD=0 \
+        /w/src/FingerJetFXOSE \
+    && make -j1
+
+# Upstream's own two suites, as a gate and not as a note. quality/INV-007 F-3
+# ran them and recorded 91 and 137 tests, both exiting 0. Each suite exits
+# non-zero when a test fails, so a regression in the pinned source stops the
+# image from being built at all rather than being discovered by a run.
+WORKDIR /w/src/FingerJetFXOSE/dist/Linux-x86_64/x64
+RUN ./testFRFXLL && ./testFRFXLLInternals
+
+# The caller. quality/REF-013 decision 1 puts source that links a third-party
+# library and crosses into the runtime as a binary in C, compiled in a builder
+# stage from the same pinned base, and implementation/tools/ is where such
+# source lives. It is the only path .dockerignore admits into the context.
+#
+# How the library is resolved, stated rather than left to be discovered: the
+# link is by -l, so the loader is asked for the base name libFJFX.so and not
+# for a path inside this stage. The two readelf lines below print what the
+# binary actually records; scripts/check_tools.sh checks the same thing in the
+# runtime with ldd. The runtime stage puts the library on the loader's search
+# path with ldconfig.
+COPY implementation/tools/iso-extract.c /w/iso-extract.c
+RUN gcc -std=c99 -O2 -Wall -Wextra -pedantic \
+        -I /w/src/FingerJetFXOSE/libFJFX/include \
+        -o /w/iso-extract /w/iso-extract.c \
+        -L /w/src/FingerJetFXOSE/dist/Linux-x86_64/x64 -lFJFX \
+    && readelf -d /w/src/FingerJetFXOSE/dist/Linux-x86_64/x64/libFJFX.so \
+        | grep -E 'SONAME' \
+    && readelf -d /w/iso-extract | grep -E 'NEEDED|RPATH|RUNPATH' \
+    && readelf -d /w/iso-extract | grep -q 'NEEDED.*\[libFJFX\.so\]' \
+    && ! readelf -d /w/iso-extract | grep -qE 'RPATH|RUNPATH'
+
+
 FROM python:3.12-slim-bookworm@sha256:782412e85d0f0984994c290652577d4018aff08145c85b262bb63dc0c7522254
 
 # Exact versions, and only these. Every package in the image is a field of the
@@ -77,13 +173,29 @@ RUN pip install --no-cache-dir \
         pytest==9.1.1 \
         pillow==12.3.0
 
-# Two files cross the stage boundary, and nothing else: no compiler, no source
+# Two files cross from the NBIS stage, and nothing else: no compiler, no source
 # tree, no NBIS tool this project does not use. Both link only libm and libc —
 # libpng and zlib are static inside mindtct — so the runtime needs no extra
 # packages; scripts/check_tools.sh checks that with ldd, and checks each
 # binary's digest against the manifest, rather than trusting either claim.
 COPY --from=nbis-builder /src/mindtct/bin/mindtct /usr/local/bin/mindtct
 COPY --from=nbis-builder /src/bozorth3/bin/bozorth3 /usr/local/bin/bozorth3
+
+# Two files cross from the FingerJetFXOSE stage, and quality/REF-011 decision 2
+# admits exactly these two: the shared library, and the caller this repository
+# owns. The eleven other artefacts quality/INV-007 F-2 lists stay behind, the
+# sample program among them — REF-011 decision 2 excludes it by name, and
+# quality/INV-007 F-6 is why.
+#
+# ldconfig is the library-resolution mechanism, and it is here rather than
+# assumed: /usr/local/lib is on the loader's default search path in this base
+# through /etc/ld.so.conf.d, but only once the cache has been rebuilt. The
+# caller records a NEEDED entry of libFJFX.so and no RPATH or RUNPATH — the
+# builder stage asserts both with readelf — so this line is what makes the
+# library findable, for the caller and for a test that opens it by name.
+COPY --from=fjfx-builder /w/src/FingerJetFXOSE/dist/Linux-x86_64/x64/libFJFX.so /usr/local/lib/libFJFX.so
+COPY --from=fjfx-builder /w/iso-extract /usr/local/bin/iso-extract
+RUN ldconfig
 
 WORKDIR /work
 
