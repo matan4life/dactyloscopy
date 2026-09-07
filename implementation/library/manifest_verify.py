@@ -209,6 +209,8 @@ def _verify_checksum_list(list_path, subset_path, corpus_root):
                 continue
             expected, name = line.split(None, 1)
             target = os.path.join(directory, name.strip())
+            if not _inside(directory, target):
+                return False, "a listed name escapes the subset: %s" % name.strip()
             if not os.path.exists(target):
                 missing.append(name.strip())
                 continue
@@ -270,9 +272,17 @@ def verify(manifest_path, repo_root, image_root="/", corpus_root=None):
             continue
 
         kind, first, second = spec
+        if kind in ("digest-of-sibling", "size-of-sibling", "path-exists"):
+            target, root = _resolve(first, repo_root, image_root)
+            if not _inside(root, target):
+                field.check(False, "%s: resolves outside %s" % (first, root))
+                continue
         if kind == "digest-of-named-file":
             target = os.path.join(repo_root, first)
-            if not os.path.exists(target):
+            if not _inside(repo_root, target):
+                field.check(False, "%s: resolves outside the repository"
+                            % first)
+            elif not os.path.exists(target):
                 field.check(False, "no such file: %s" % first)
             else:
                 got = _sha256_file(target)
@@ -280,7 +290,6 @@ def verify(manifest_path, repo_root, image_root="/", corpus_root=None):
                             "%s: %s" % (first, "matches" if got == second
                                         else "%s, recorded %s" % (got, second)))
         elif kind == "digest-of-sibling":
-            target = _resolve(first, repo_root, image_root)
             if not os.path.exists(target):
                 field.check(False, "no such file: %s" % first)
             else:
@@ -289,7 +298,6 @@ def verify(manifest_path, repo_root, image_root="/", corpus_root=None):
                             "%s: %s" % (first, "matches" if got == second
                                         else "%s, recorded %s" % (got, second)))
         elif kind == "size-of-sibling":
-            target = _resolve(first, repo_root, image_root)
             if not os.path.exists(target):
                 field.check(False, "no such file: %s" % first)
             else:
@@ -302,17 +310,24 @@ def verify(manifest_path, repo_root, image_root="/", corpus_root=None):
                 field.skip("not checked here: no corpus mounted")
             else:
                 target = os.path.join(corpus_root, first)
-                field.check(os.path.isdir(target),
-                            "%s: %s" % (first, "present" if os.path.isdir(target)
-                                        else "absent"))
+                if not _inside(corpus_root, target):
+                    field.check(False, "%s: resolves outside the corpus root"
+                                % first)
+                else:
+                    field.check(os.path.isdir(target),
+                                "%s: %s" % (first,
+                                            "present" if os.path.isdir(target)
+                                            else "absent"))
         elif kind == "path-exists":
-            target = _resolve(first, repo_root, image_root)
             field.check(os.path.exists(target),
                         "%s: %s" % (first, "present" if os.path.exists(target)
                                     else "absent"))
         elif kind == "checksum-list":
             list_path = os.path.join(repo_root, first)
-            if not os.path.exists(list_path):
+            if not _inside(repo_root, list_path):
+                field.check(False, "%s: resolves outside the repository"
+                            % first)
+            elif not os.path.exists(list_path):
                 field.check(False, "no such list: %s" % first)
             else:
                 # Two checks on one field, and both have to hold: the list is
@@ -337,9 +352,25 @@ def verify(manifest_path, repo_root, image_root="/", corpus_root=None):
 
 
 def _resolve(value, repo_root, image_root):
+    """Where a path value points, and the root it must stay under.
+
+    Returns (path, root). A relative value is resolved against the repository
+    and an absolute one against the image, and either way the caller checks
+    containment: a value like `../../etc/passwd` resolves to a real file and
+    would otherwise be reported present, which is the shape of failure this
+    whole mechanism exists to remove.
+    """
     if os.path.isabs(value):
-        return os.path.join(image_root, value.lstrip("/"))
-    return os.path.join(repo_root, value)
+        return os.path.join(image_root, value.lstrip("/")), image_root
+    return os.path.join(repo_root, value), repo_root
+
+
+def _inside(root, path):
+    root = os.path.realpath(root)
+    target = os.path.realpath(path)
+    if root == os.sep:            # everything is under the filesystem root
+        return True
+    return target == root or target.startswith(root.rstrip(os.sep) + os.sep)
 
 
 def summarise(fields):

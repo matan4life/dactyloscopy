@@ -53,7 +53,16 @@ failures = []
 
 for path in manifests:
     name = os.path.basename(path)
-    fields = verify(path, repo, image_root="/", corpus_root=corpus)
+    try:
+        fields = verify(path, repo, image_root="/", corpus_root=corpus)
+    except ValueError as broken:
+        # A manifest that is not JSON is a failure with a name, not a
+        # traceback: the report has to say which file and why.
+        print("=== %s" % name)
+        print("  FAIL: not readable as JSON: %s" % broken)
+        print()
+        failures.append("%s  <the whole file>  not readable as JSON" % name)
+        continue
     summary = summarise(fields)
     for key in grand:
         grand[key] += summary[key]
@@ -93,7 +102,11 @@ print("=== coverage over every manifest")
 print("  %d fields with a value and a status" % grand["total"])
 print("  %d checked, %d of them failing" % (grand["checked"], grand["failed"]))
 print("  %d not checked here" % grand["unchecked"])
-print("  %.1f%% of fields checked" % (100.0 * grand["checked"] / grand["total"]))
+if grand["total"]:
+    print("  %.1f%% of fields checked"
+          % (100.0 * grand["checked"] / grand["total"]))
+else:
+    print("  no field carried a value and a status, so nothing was checked")
 if not os.environ.get("LABDATA") and corpus is None:
     print("  LABDATA was not set, so no corpus digest was verified")
 

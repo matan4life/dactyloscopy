@@ -187,9 +187,26 @@ digest no longer matches it, and a status set to `CONFLICT` on a field the
 verifier would otherwise have checked. The third is the reading rule: the value
 was correct, and the point is that it was never used.
 
-`tests/test_manifest_verify.py` holds the same three, plus a changed byte in a
-listed corpus file, plus the classification of nine named fields — which
-`REF-014` decision 1 requires, since it put the classification in code.
+Three more failures were found by probing rather than by tampering, and each
+is now a check the verifier makes:
+
+    manifests/ empty                     FAIL: manifests/MAN-*.json matched nothing, exit 1
+    a manifest that is not JSON          FAIL: <name>  <the whole file>  not readable as JSON, exit 1
+    a value of ../../../etc/passwd       FAIL: resolves outside /tampered, exit 1
+
+The third was a pass before it was a failure. A manifest field whose value is a
+relative path that climbs out of the repository resolved to a real file, and
+the verifier reported it present and printed `100.0% of fields checked`. It is
+the shape of failure this whole mechanism exists to remove — a check satisfied
+by the wrong file — and it was found by trying to make the verifier lie rather
+than by reading it. Every path check now requires the resolved path to stay
+under the root it was resolved against, and a name inside a checksum list must
+stay under its subset.
+
+`tests/test_manifest_verify.py` holds all of it: the wrong digest, the changed
+byte in a listed corpus file, the `CONFLICT` refusal, both escaping paths, and
+the classification of nine named fields — which `REF-014` decision 1 requires,
+since it put the classification in code.
 
 ## Two defects the report exposed while it was being built
 

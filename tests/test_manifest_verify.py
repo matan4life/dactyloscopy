@@ -210,6 +210,42 @@ def test_without_a_corpus_the_list_check_is_reported_as_not_run(tmp_path):
     assert "no corpus mounted" in checksums.detail
 
 
+def test_a_path_that_escapes_the_root_fails_rather_than_passing(tmp_path):
+    """A relative value that climbs out of the repository is not a pass.
+
+    The verifier reported `../../../etc/passwd` as present, and 100% of fields
+    checked, until this was added. It is the shape of failure the whole
+    mechanism exists to remove: a check satisfied by the wrong file.
+    """
+    path = write(tmp_path, "m.json", {
+        "tools": {"t": {"binary": {"path": field("../../../etc/passwd")}}}})
+    fields = {f.path: f for f in mv.verify(path, str(tmp_path))}
+    escaped = fields["tools.t.binary.path"]
+    assert escaped.checked is True
+    assert escaped.ok is False
+    assert "resolves outside" in escaped.detail
+
+
+def test_a_listed_name_that_escapes_the_subset_fails(tmp_path):
+    """The same rule inside a checksum list, where the names come from a file."""
+    data = tmp_path / "corpus" / "subset"
+    data.mkdir(parents=True)
+    (data / "one.tif").write_bytes(b"one")
+    listing = tmp_path / "list.sha256"
+    listing.write_text("%s  ../../escape.tif\n"
+                       % mv._sha256_file(str(data / "one.tif")),
+                       encoding="utf-8")
+    path = write(tmp_path, "m.json", {"subsets": {"s": {
+        "path": field("subset"),
+        "checksums": field("list.sha256",
+                           sha256=mv._sha256_file(str(listing))),
+    }}})
+    fields = {f.path: f for f in mv.verify(
+        path, str(tmp_path), corpus_root=str(tmp_path / "corpus"))}
+    assert fields["subsets.s.checksums"].ok is False
+    assert "escapes the subset" in fields["subsets.s.checksums"].detail
+
+
 # --- the reading rule -----------------------------------------------------
 
 def test_a_conflict_field_is_not_read_and_is_a_failure(tmp_path):

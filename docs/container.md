@@ -151,12 +151,12 @@ nothing would mean the mount or the suite is wrong, and `make test` reports it.
     ============================= test session starts ==============================
     platform linux -- Python 3.12.14, pytest-9.1.1, pluggy-1.6.0
     rootdir: /work
-    collected 45 items
+    collected 47 items
 
-    tests/test_iso_extract.py ......................                         [ 48%]
-    tests/test_manifest_verify.py .......................                    [100%]
+    tests/test_iso_extract.py ......................                         [ 46%]
+    tests/test_manifest_verify.py .........................                  [100%]
 
-    ============================== 45 passed in 0.53s ==============================
+    ============================== 47 passed in 0.60s ==============================
     $ echo $?
     0
 
@@ -165,14 +165,14 @@ A failing test fails the target:
     $ printf 'def test_that_fails():\n    assert 1 == 2\n' > tests/test_sanity_probe.py
     $ make test
     FAILED tests/test_sanity_probe.py::test_that_fails - assert 1 == 2
-    ========================= 1 failed, 45 passed in 0.63s =========================
+    ========================= 1 failed, 47 passed in 0.63s =========================
     make: *** [Makefile:72: test] Error 1
 
 The probe file was deleted afterwards and is not in the tree.
 
 `test` mounts the repository and nothing else, so it needs no `LABDATA`. The
 counts were re-captured on 2026-09-07: the suite was 22 tests over one file
-until `tests/test_manifest_verify.py` was added. What the suite checks is
+until `tests/test_manifest_verify.py` took it to 47. What the suite checks is
 `docs/tools.md`'s and `docs/manifests.md`'s subject, not this page's.
 
 ### 5. `make shell` without `LABDATA` starts nothing
