@@ -1,0 +1,240 @@
+{
+  "manifest": "MAN-fvc2002.v1",
+  "issued": "2026-09-07",
+  "competition": "FVC2002",
+  "rests_on": [
+    "quality/INV-005-fvc2002-corpus.md",
+    "quality/REF-009-corpus-placement-and-identity.md"
+  ],
+  "note": "The identity of the FVC2002 corpus as it sits on the machine that issued this manifest. Every number carries a status. Two claims are kept apart on purpose and must not be conflated: that the copy is faithful to the tree it was copied from, which is VERIFIED, and that the tree is the official distribution, which is UNVERIFIED. REF-009 decision 4 is why. No image, no minutia and no pixel value is in this file or in anything it names; the checksum lists carry a digest and a file name.",
+
+  "distribution": {
+    "root": {
+      "value": "$LABDATA/raw/fvc2002",
+      "status": "VERIFIED",
+      "note": "Resolved as .env.example specifies, mounted read-only at /data/raw by the Makefile. The mount was checked from inside the container: the listing is the corpus, a write to /data/raw fails with Read-only file system, and a write to /data/derived succeeds."
+    },
+    "layout": {
+      "value": ["Dbs", "Doc", "Src"],
+      "status": "VERIFIED",
+      "note": "The distributor's own layout, kept verbatim. Doc/ holds FVC2002_results_summary.pdf; Src/ holds inc/fvc2002.h, skeletons/Enroll_XXXX.c and skeletons/Match_XXXX.c. INV-005 F-1."
+    },
+    "files_total": { "value": 3528, "status": "VERIFIED", "note": "INV-005 F-1." },
+    "images_total": { "value": 3520, "status": "VERIFIED", "note": "INV-005 F-2." },
+    "bytes_total": {
+      "value": 452143653,
+      "status": "VERIFIED",
+      "note": "Summed over every file in the tree. Of that, 451890560 bytes are the 3520 images; the remainder is the four index files, the summary PDF and the three participant skeleton sources."
+    },
+    "provenance": {
+      "value": "third-party redistribution",
+      "status": "VERIFIED",
+      "note": "The tree reached this machine through a redistribution and not from the organisers. This is a fact about how it arrived, and it is the reason the field below is UNVERIFIED."
+    },
+    "copy_faithful_to_source_tree": {
+      "value": true,
+      "status": "VERIFIED",
+      "note": "robocopy /E /COPY:DAT /XJ reported 3528 files copied, 0 failed, 0 mismatched. The four index files, which are text carrying CRLF and would be the first casualties of a line-ending normalisation, digest identically before and after the copy. No symbolic link or junction exists under the target. INV-005 F-4."
+    },
+    "correspondence_to_official_distribution": {
+      "value": "not established",
+      "status": "UNVERIFIED",
+      "note": "Every digest available here was taken from the same tree it describes, so it establishes faithfulness and cannot establish authenticity: using it for the second would be circular. Closing this needs a checksum published by the organisers, or a second copy obtained independently. INV-005 R-1, REF-009 decision 4."
+    },
+    "corroboration_of_authenticity": {
+      "value": [
+        "The layout is the distribution's own, including Doc/ and Src/, and Src/ holds three participant skeleton sources.",
+        "Each database holds exactly one distinct image size across every one of its files: 388x374, 296x560, 300x300 and 288x384. DB1's agrees with the size INV-002 F-1 measured on the same subset for another purpose.",
+        "The file counts are 800 per _A subset and 80 per _B, and each is exactly the number of fingers present times the number of impressions present, with no finger or impression missing or repeated.",
+        "The index files carry 4950, 2800, 45 and 280 lines, which are exactly the pairwise counts the finger and impression counts present in the corpus give: 100*99/2, 100*(8*7/2), 10*9/2 and 10*(8*7/2)."
+      ],
+      "status": "VERIFIED",
+      "note": "Each item above was measured or computed here, over the whole corpus, and each is a property a faithful copy would have and a corrupted or substituted one probably would not. None of them is a signature, and this field is corroboration, not proof. It does not change the status of the field above. Nothing here is a comparison against a document: see attributed_but_not_read."
+    },
+    "attributed_but_not_read": {
+      "value": [
+        "That the four image sizes above are the ones the published FVC2002 specification gives.",
+        "That the four line counts above are the comparison counts the FVC protocol defines."
+      ],
+      "status": "UNVERIFIED",
+      "note": "Both are attributions to documents no investigation in this repository has read. They are stated separately from the field above because a comparison against an unread document is not a measurement, and putting one inside a VERIFIED field would be the exact inference REF-009 decision 4 exists to prevent. What is established here is the internal arithmetic, not the agreement with an outside authority. INV-005 F-9 records that the specification has not been read; INV-005 R-2 records that the organisers' pages could not be fetched."
+    },
+    "publisher_checksums": {
+      "value": "not established",
+      "status": "UNVERIFIED",
+      "note": "Whether the organisers publish checksums could not be settled from here in either direction. bias.csr.unibo.it presents a certificate naming only biolab.csr.unibo.it, so a fetch fails on a hostname mismatch; biolab.csr.unibo.it returns HTTP 404 for the FVC2002 path; the Internet Archive is not reachable from this environment. A web search surfaced none, which is weak evidence of absence and no evidence of what the page says. INV-005 R-2."
+    }
+  },
+
+  "index_files": {
+    "note": "The comparison indices the distribution ships, digested and measured but not interpreted. The protocol they define has no manifest and is not this manifest's subject. INV-005 F-7.",
+    "index_a.MFA": {
+      "sha256": { "value": "a90b5c6a1d731bf013aa9284c237f9c409be2b2e67dcff15c0c538f7a9724c1b", "status": "VERIFIED" },
+      "bytes": { "value": 93258, "status": "VERIFIED" },
+      "lines": { "value": 4950, "status": "VERIFIED", "note": "Every line names two .tif files; 100 distinct names are referenced. Line endings are CRLF on every line." }
+    },
+    "index_a.MFR": {
+      "sha256": { "value": "cbcbd83d5b121e48b44bd3201a92f18b7adcb085c7530bdf7c8b253f1a1105f6", "status": "VERIFIED" },
+      "bytes": { "value": 52752, "status": "VERIFIED" },
+      "lines": { "value": 2800, "status": "VERIFIED", "note": "Every line names two .tif files; 800 distinct names are referenced. Line endings are CRLF on every line." }
+    },
+    "index_B.MFA": {
+      "sha256": { "value": "684bff5e66cac5ebab73f8a5f908ad8315eb76d40b803ae83fbc94efeedfd044", "status": "VERIFIED" },
+      "bytes": { "value": 945, "status": "VERIFIED" },
+      "lines": { "value": 45, "status": "VERIFIED", "note": "10 distinct names referenced." }
+    },
+    "index_B.MFR": {
+      "sha256": { "value": "eeffbe180b1ee48203dfb3757b2c31b750869ef99c56360be3af08d16035aebe", "status": "VERIFIED" },
+      "bytes": { "value": 5880, "status": "VERIFIED" },
+      "lines": { "value": 280, "status": "VERIFIED", "note": "80 distinct names referenced." }
+    }
+  },
+
+  "roles": {
+    "note": "The roles below are the organisers' definition and not this project's assignment. The competition distributed fingers 1 to 100 as the benchmark evaluation set and fingers 101 to 110 to participants for parameter tuning. INV-005 F-10 measures which fingers each subset contains; that mapping is what this manifest establishes here, and the meaning of the two ranges is attributed, not derived.",
+    "eval_primary": "The benchmark evaluation set as the organisers defined it. A result reported from it is a benchmark result.",
+    "tune": "The set the organisers gave participants for parameter tuning. Legitimate for verifying that a tool behaves as its manifest records. Not a benchmark set: a result computed on it must name the set it came from. This repository's tool fixture is recorded against fvc2002/DB1_B, which is measured in INV-005 F-11 and carried in that subset's carries_the_tool_fixture field. See REF-009 decision 2."
+  },
+
+  "subsets": {
+    "fvc2002/DB1_A": {
+      "path": { "value": "Dbs/Db1_a", "status": "VERIFIED" },
+      "role": { "value": "eval_primary", "status": "VERIFIED", "note": "Contains fingers 1 to 100 (INV-005 F-10); the role of that range is the organisers' definition." },
+      "fingers": { "value": "1-100", "status": "VERIFIED" },
+      "impressions_per_finger": { "value": 8, "status": "VERIFIED" },
+      "images": { "value": 800, "status": "VERIFIED", "note": "All .tif, nothing else present." },
+      "width": { "value": 388, "status": "VERIFIED", "note": "Checked on every file, not sampled; one distinct size in the subset." },
+      "height": { "value": 374, "status": "VERIFIED", "note": "Checked on every file, not sampled." },
+      "mode": { "value": "8-bit greyscale", "status": "VERIFIED", "note": "Pillow mode L; TIFF PhotometricInterpretation 1, Compression 1 (uncompressed), on every file." },
+      "bytes_per_file": { "value": 145624, "status": "VERIFIED", "note": "Identical for every file in the subset." },
+      "resolution_dpi": { "value": 500, "status": "UNVERIFIED", "note": "No file in this corpus declares a resolution: XResolution, YResolution and ResolutionUnit are absent from all 3520 TIFF headers (INV-005 F-9). This value is reported (INV-002 R-5) and nothing in the corpus can check it." },
+      "checksums": { "value": "manifests/checksums/fvc2002/DB1_A.sha256", "status": "VERIFIED", "sha256": "11e365c8af1daee531cdc5619b421517562ab8588a400cad1c099fd13acca7d2", "note": "800 entries; verified against the mounted corpus with sha256sum -c, 800 OK and 0 failures." },
+      "licence": { "value": "distributed with the Handbook of Fingerprint Recognition (Springer); not a free download", "status": "UNVERIFIED", "source": "web search summarising the organisers' pages, which could not be fetched from here", "note": "INV-005 R-3." }
+    },
+    "fvc2002/DB1_B": {
+      "path": { "value": "Dbs/Db1_b", "status": "VERIFIED" },
+      "role": { "value": "tune", "status": "VERIFIED", "note": "Contains fingers 101 to 110 (INV-005 F-10); the role of that range is the organisers' definition." },
+      "carries_the_tool_fixture": { "value": true, "status": "VERIFIED", "note": "The three images MAN-tools.v1.json records a fixture against are in this subset at the digests DB1_B.sha256 gives, and the whole fixture reproduces when the images are read from here: both binary digests match, all three mindtct outputs match, and all six bozorth3 scores match. INV-005 F-11. This raises MAN-tools.v1.json's own dataset field, which is UNVERIFIED there because the images were identified by a directory name and not by a checksummed set; that manifest is immutable and is not edited, so the correction lives here." },
+      "fingers": { "value": "101-110", "status": "VERIFIED" },
+      "impressions_per_finger": { "value": 8, "status": "VERIFIED" },
+      "images": { "value": 80, "status": "VERIFIED", "note": "All .tif, nothing else present." },
+      "width": { "value": 388, "status": "VERIFIED", "note": "Checked on every file, not sampled." },
+      "height": { "value": 374, "status": "VERIFIED", "note": "Checked on every file, not sampled." },
+      "mode": { "value": "8-bit greyscale", "status": "VERIFIED" },
+      "bytes_per_file": { "value": 145624, "status": "VERIFIED" },
+      "resolution_dpi": { "value": 500, "status": "UNVERIFIED", "note": "See fvc2002/DB1_A." },
+      "checksums": { "value": "manifests/checksums/fvc2002/DB1_B.sha256", "status": "VERIFIED", "sha256": "4127e484a99b90ba2def64aad7315dffa88d42ba1a2412f64412b2f8674c7dd9", "note": "80 entries; 80 OK and 0 failures." },
+      "licence": { "value": "free download", "status": "UNVERIFIED", "source": "web search summarising the organisers' pages, which could not be fetched from here", "note": "INV-005 R-3." }
+    },
+    "fvc2002/DB2_A": {
+      "path": { "value": "Dbs/Db2_a", "status": "VERIFIED" },
+      "role": { "value": "eval_primary", "status": "VERIFIED", "note": "Contains fingers 1 to 100; the role of that range is the organisers' definition." },
+      "fingers": { "value": "1-100", "status": "VERIFIED" },
+      "impressions_per_finger": { "value": 8, "status": "VERIFIED" },
+      "images": { "value": 800, "status": "VERIFIED" },
+      "width": { "value": 296, "status": "VERIFIED", "note": "Checked on every file, not sampled." },
+      "height": { "value": 560, "status": "VERIFIED", "note": "Checked on every file, not sampled." },
+      "mode": { "value": "8-bit greyscale", "status": "VERIFIED" },
+      "bytes_per_file": { "value": 166272, "status": "VERIFIED" },
+      "resolution_dpi": { "value": 569, "status": "UNVERIFIED", "note": "Reported (INV-002 R-5) and different from the other three databases. No file declares it. This is the subset REF-007 decision 4 excludes from any comparison involving FingerJetFXOSE." },
+      "checksums": { "value": "manifests/checksums/fvc2002/DB2_A.sha256", "status": "VERIFIED", "sha256": "8161073dbdcdad700efc83c796c7fc0cbdba5b4be9e9efe6d2a5181141cdd8a0", "note": "800 entries; 800 OK and 0 failures." },
+      "licence": { "value": "distributed with the Handbook of Fingerprint Recognition (Springer); not a free download", "status": "UNVERIFIED", "source": "web search summarising the organisers' pages, which could not be fetched from here" }
+    },
+    "fvc2002/DB2_B": {
+      "path": { "value": "Dbs/Db2_b", "status": "VERIFIED" },
+      "role": { "value": "tune", "status": "VERIFIED", "note": "Contains fingers 101 to 110; the role of that range is the organisers' definition." },
+      "fingers": { "value": "101-110", "status": "VERIFIED" },
+      "impressions_per_finger": { "value": 8, "status": "VERIFIED" },
+      "images": { "value": 80, "status": "VERIFIED" },
+      "width": { "value": 296, "status": "VERIFIED" },
+      "height": { "value": 560, "status": "VERIFIED" },
+      "mode": { "value": "8-bit greyscale", "status": "VERIFIED" },
+      "bytes_per_file": { "value": 166272, "status": "VERIFIED" },
+      "resolution_dpi": { "value": 569, "status": "UNVERIFIED", "note": "See fvc2002/DB2_A." },
+      "checksums": { "value": "manifests/checksums/fvc2002/DB2_B.sha256", "status": "VERIFIED", "sha256": "daf7ab5d45895bd53ce77c2767174d604b9b799fc9845fe203e0e3c3b184eef6", "note": "80 entries; 80 OK and 0 failures." },
+      "licence": { "value": "free download", "status": "UNVERIFIED", "source": "web search summarising the organisers' pages, which could not be fetched from here" }
+    },
+    "fvc2002/DB3_A": {
+      "path": { "value": "Dbs/Db3_a", "status": "VERIFIED" },
+      "role": { "value": "eval_primary", "status": "VERIFIED", "note": "Contains fingers 1 to 100; the role of that range is the organisers' definition." },
+      "fingers": { "value": "1-100", "status": "VERIFIED" },
+      "impressions_per_finger": { "value": 8, "status": "VERIFIED" },
+      "images": { "value": 800, "status": "VERIFIED" },
+      "width": { "value": 300, "status": "VERIFIED", "note": "Checked on every file, not sampled." },
+      "height": { "value": 300, "status": "VERIFIED", "note": "Checked on every file, not sampled." },
+      "mode": { "value": "8-bit greyscale", "status": "VERIFIED" },
+      "bytes_per_file": { "value": 90512, "status": "VERIFIED" },
+      "resolution_dpi": { "value": 500, "status": "UNVERIFIED", "note": "See fvc2002/DB1_A." },
+      "checksums": { "value": "manifests/checksums/fvc2002/DB3_A.sha256", "status": "VERIFIED", "sha256": "e0e5e1c3672bfcd514b0d4a856911d7e207a11df08fb7b8a618a261e97cfdfce", "note": "800 entries; 800 OK and 0 failures." },
+      "licence": { "value": "distributed with the Handbook of Fingerprint Recognition (Springer); not a free download", "status": "UNVERIFIED", "source": "web search summarising the organisers' pages, which could not be fetched from here" }
+    },
+    "fvc2002/DB3_B": {
+      "path": { "value": "Dbs/Db3_b", "status": "VERIFIED" },
+      "role": { "value": "tune", "status": "VERIFIED", "note": "Contains fingers 101 to 110; the role of that range is the organisers' definition." },
+      "fingers": { "value": "101-110", "status": "VERIFIED" },
+      "impressions_per_finger": { "value": 8, "status": "VERIFIED" },
+      "images": { "value": 80, "status": "VERIFIED" },
+      "width": { "value": 300, "status": "VERIFIED" },
+      "height": { "value": 300, "status": "VERIFIED" },
+      "mode": { "value": "8-bit greyscale", "status": "VERIFIED" },
+      "bytes_per_file": { "value": 90512, "status": "VERIFIED" },
+      "resolution_dpi": { "value": 500, "status": "UNVERIFIED", "note": "See fvc2002/DB1_A." },
+      "checksums": { "value": "manifests/checksums/fvc2002/DB3_B.sha256", "status": "VERIFIED", "sha256": "189b7ec60520353913d52e8f90a0f96f36a922d1a9538c481cbc585525be43c6", "note": "80 entries; 80 OK and 0 failures." },
+      "licence": { "value": "free download", "status": "UNVERIFIED", "source": "web search summarising the organisers' pages, which could not be fetched from here" }
+    },
+    "fvc2002/DB4_A": {
+      "path": { "value": "Dbs/Db4_a", "status": "VERIFIED" },
+      "role": { "value": "eval_primary", "status": "VERIFIED", "note": "Contains fingers 1 to 100; the role of that range is the organisers' definition." },
+      "fingers": { "value": "1-100", "status": "VERIFIED" },
+      "impressions_per_finger": { "value": 8, "status": "VERIFIED" },
+      "images": { "value": 800, "status": "VERIFIED" },
+      "width": { "value": 288, "status": "VERIFIED", "note": "Checked on every file, not sampled." },
+      "height": { "value": 384, "status": "VERIFIED", "note": "Checked on every file, not sampled." },
+      "mode": { "value": "8-bit greyscale", "status": "VERIFIED" },
+      "bytes_per_file": { "value": 111104, "status": "VERIFIED" },
+      "resolution_dpi": { "value": 500, "status": "UNVERIFIED", "note": "See fvc2002/DB1_A." },
+      "checksums": { "value": "manifests/checksums/fvc2002/DB4_A.sha256", "status": "VERIFIED", "sha256": "677137822a90e4f93cb4928c6bb38beec09c17fab9db05535610770b929fc892", "note": "800 entries; 800 OK and 0 failures." },
+      "licence": { "value": "distributed with the Handbook of Fingerprint Recognition (Springer); not a free download", "status": "UNVERIFIED", "source": "web search summarising the organisers' pages, which could not be fetched from here" }
+    },
+    "fvc2002/DB4_B": {
+      "path": { "value": "Dbs/Db4_b", "status": "VERIFIED" },
+      "role": { "value": "tune", "status": "VERIFIED", "note": "Contains fingers 101 to 110; the role of that range is the organisers' definition." },
+      "fingers": { "value": "101-110", "status": "VERIFIED" },
+      "impressions_per_finger": { "value": 8, "status": "VERIFIED" },
+      "images": { "value": 80, "status": "VERIFIED" },
+      "width": { "value": 288, "status": "VERIFIED" },
+      "height": { "value": 384, "status": "VERIFIED" },
+      "mode": { "value": "8-bit greyscale", "status": "VERIFIED" },
+      "bytes_per_file": { "value": 111104, "status": "VERIFIED" },
+      "resolution_dpi": { "value": 500, "status": "UNVERIFIED", "note": "See fvc2002/DB1_A." },
+      "checksums": { "value": "manifests/checksums/fvc2002/DB4_B.sha256", "status": "VERIFIED", "sha256": "860d8cdfc5c63863ec6e3eeb90bdc9ad6c9dc318e312377e7e082d335427d404", "note": "80 entries; 80 OK and 0 failures." },
+      "licence": { "value": "free download", "status": "UNVERIFIED", "source": "web search summarising the organisers' pages, which could not be fetched from here" }
+    }
+  },
+
+  "observations": {
+    "note": "Properties of this corpus that a later run has to know about and that are not per-subset fields.",
+    "byte_identical_files": {
+      "value": { "fvc2002/DB1_A": ["81_5.tif", "81_7.tif"] },
+      "status": "VERIFIED",
+      "note": "Exactly one pair in the whole corpus. Searched within each of the eight subsets and across all of them: no other pair shares a digest, and no pair spans two subsets. 3519 distinct digests over 3520 files. INV-005 F-6."
+    },
+    "duplicate_pair_is_a_defined_comparison": {
+      "value": true,
+      "status": "VERIFIED",
+      "note": "The line '81_5.tif 81_7.tif' appears exactly once in index_a.MFR, the index of 2800 genuine comparisons, and does not appear in index_a.MFA. Since the two files are byte-identical, a deterministic extractor returns the same template for both and a deterministic matcher therefore performs a self-comparison; the determinism of the extractor in this repository's image is recorded in MAN-tools.v1.json. One of the genuine comparisons this corpus defines is a file compared with itself. INV-005 F-8."
+    },
+    "resolution_declared_in_the_files": {
+      "value": false,
+      "status": "VERIFIED",
+      "note": "XResolution, YResolution and ResolutionUnit are absent from all 3520 TIFF headers. Every resolution_dpi field above is therefore a report and not a measurement, and nothing in this corpus can check one. INV-005 F-9."
+    },
+    "distinct_digests": { "value": 3519, "status": "VERIFIED", "note": "Over 3520 image files. The difference of one is the pair above." }
+  },
+
+  "not_in_this_manifest": [
+    "Any image, any minutia, any pixel value. Digests, counts, dimensions, roles, statuses and file names only.",
+    "The protocol. The index files are digested and their shape is measured; what comparison they define, and whether every line names a pair that exists, is not this manifest's subject and has no manifest yet.",
+    "Any claim that a digest taken from this tree establishes where the tree came from. REF-009 decision 4."
+  ]
+}
