@@ -67,8 +67,10 @@ was run under the same instrument and opened no manifest at all: the only JSON
 it loaded was `.pytest_cache/v/cache/nodeids`.
 
 **What is read, by kind.** All 42 are in `MAN-tools.v2`, and they are the
-fields that name a thing the script can go and measure: each tool's
-`binary.*_path` and `*_sha256`, its `identity.parts.*` and
+fields that name a thing the script can go and measure: for the two NBIS tools
+`binary.path` and `binary.sha256`, for the extractor `binary.caller_path`,
+`binary.caller_sha256`, `binary.library_path` and `binary.library_sha256`, and
+for each tool its `identity.parts.*` and
 `identity.composed_sha256`, its `runtime.*shared_libraries`, the three mindtct
 fixture cases, the six bozorth3 pair scores, the three iso-extract fixture
 cases and `iso-extract.invocation.exit_codes`.
@@ -95,10 +97,16 @@ against, cannot be verified by the mechanism that verifies its successor.
 ### The table
 
 One row per field, generated from the four files by the script under block
-**F1** in "Reproducing this". That script asserts that the set of paths it
-prints equals the set an independent walk of each file finds, so the table
-cannot omit a field or invent one; the assertion held when the table was
-produced.
+**F1** in "Reproducing this", rather than typed.
+
+**What the generator's assertion does and does not establish.** It prints from
+the walk of block **T** and then asserts that what it printed equals what that
+walk finds, so it catches a transcription or filtering mistake between the two
+and nothing more. It is not an independent second walk, and it cannot be:
+`INV-009`'s table was hand-written and asserted against the walk, which is the
+stronger arrangement, and this one is not that. What makes the counts here
+checkable is that the same walk is given in full as block **T** and prints 332
+on the four files.
 
 | manifest | field | status | read by |
 | --- | --- | --- | --- |
@@ -441,10 +449,15 @@ produced.
 in all: 800 for each `_A` subset and 80 for each `_B`.
 
 **Nothing reads them.** A search of every file in the tree, of any type, for
-the string `checksums` returns only prose: `README.md`, `CONTRIBUTING.md`,
-`docs/data.md`, `manifests/README.md`, the `.gitattributes` line that marks the
-directory generated, and the manifests themselves, which name the lists as
-values. No script, no test and no `Makefile` target opens one (**Q**).
+the string `checksums` returns hits in ten files, all of them prose or a value:
+`README.md` (2), `CONTRIBUTING.md` (1), `docs/data.md` (3),
+`manifests/README.md` (1), the `.gitattributes` line that marks the directory
+generated (1), `manifests/MAN-fvc2002.v1.json` (10) and
+`manifests/MAN-tools.v2.json` (3), which name the lists as values, and three
+records that describe checking them by hand — `quality/INV-005` (4, one of
+them a `sha256sum -c` command line), `quality/INV-007` (1) and
+`quality/INV-009` (2). No script, no test and no `Makefile` target opens one
+(**Q**).
 
 **The lists have digests of their own, and nothing verifies those either.**
 `MAN-fvc2002.v1.json` records a `sha256` beside each `checksums` value. All
@@ -511,9 +524,13 @@ From the host, including everything docker does:
 | `make check-tools` end to end | 1.652 s |
 | `docker run --rm dactyloscopy:dev true`, the floor | 0.395 s |
 
-So a container costs about four tenths of a second and every manifest this
-repository holds can be verified in full in under eight seconds, corpus
-included.
+What was timed is three operations, not a full verification: the sixteen
+sections of `scripts/check_tools.sh`, the eight list digests, and the 3520
+corpus digests. Together they touch no field of `MAN-minutia.v1`, no field of
+`MAN-tools.v1` and 108 of `MAN-fvc2002.v1`'s 124, as F-1's table says. So the
+measurement is that **a container costs about four tenths of a second, and the
+three operations above take 7.6 seconds between them**. What a mechanism that
+verified more would cost is not measured here.
 
 ## F-4 — where the read-time rule is stated
 
@@ -675,12 +692,61 @@ then:
     KeyError: 'identity'
     exit=1
 
-**F1 — the table.** `$SP/f1_table.py`, given the tracker output. It walks each
-manifest for objects carrying both a `value` and a `status`, asks the tracker
-output whether that field's `.value` was read, prints one row per field, and
-asserts that what it printed equals what the walk found.
+**F1 — the table.** A script in the scratch directory, not in the tree, given
+the tracker output of block **T**. It is reproduced here in full, because a
+command that is not in the tree and is not printed is not a reproducing
+command.
 
-    python f1_table.py /track/v2.tsv
+    python - /track/v2.tsv <<'PY'
+    import json, os, sys
+    MANIFESTS = [("MAN-fvc2002.v1", "manifests/MAN-fvc2002.v1.json"),
+                 ("MAN-minutia.v1", "manifests/MAN-minutia.v1.json"),
+                 ("MAN-tools.v1", "manifests/MAN-tools.v1.json"),
+                 ("MAN-tools.v2", "manifests/MAN-tools.v2.json")]
+
+    def walk(o, path, out):
+        if isinstance(o, dict):
+            if "value" in o and "status" in o:
+                out.append((path, o["status"])); return
+            for k, v in o.items():
+                walk(v, (path + "." + k) if path else k, out)
+        elif isinstance(o, list):
+            for i, v in enumerate(o):
+                walk(v, "%s[%d]" % (path, i), out)
+
+    touched = {}
+    for line in open(sys.argv[1], encoding="utf-8"):
+        src, p, _kind = line.rstrip("
+").split("	")
+        touched.setdefault(os.path.basename(src), set()).add(p)
+
+    def is_read(manifest_file, f):
+        v = f + ".value"
+        return any(p == v or p.startswith(v + ".") or p.startswith(v + "[")
+                   for p in touched.get(manifest_file, set()))
+
+    rows = []
+    for name, path in MANIFESTS:
+        fields = []
+        walk(json.load(open(path, encoding="utf-8")), "", fields)
+        base = os.path.basename(path)
+        for f, status in fields:
+            rows.append((name, f, status, is_read(base, f)))
+    for name, path in MANIFESTS:
+        fields = []
+        walk(json.load(open(path, encoding="utf-8")), "", fields)
+        printed = sorted(f for n, f, _s, _r in rows if n == name)
+        assert printed == sorted(f for f, _s in fields), name
+    print("| manifest | field | status | read by |")
+    print("| --- | --- | --- | --- |")
+    for name, f, status, read in rows:
+        print("| %s | `%s` | %s | %s |"
+              % (name, f, status,
+                 "`scripts/check_tools.sh`" if read else "nothing"))
+    print("total %d, read %d, unread %d"
+          % (len(rows), sum(1 for r in rows if r[3]),
+             sum(1 for r in rows if not r[3])))
+    PY
 
 It prints the table above and then `total 332, read 42, unread 290`.
 
