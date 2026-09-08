@@ -212,9 +212,11 @@ computed over the whole plane and then blanked outside a named half:
 
 with `r` the distance to the core, `a_core` and `a_delta` the angles to the core
 and to the delta, and **period 9 pixels**, which at the 500 dpi the caller
-declares is a ridge spacing of about 0.46 mm. The period is stated because
-`INV-007` measured that this library refuses a synthetic field at some periods
-and accepts it at others; of the periods tried there, 9 was the one it accepted.
+declares is a ridge spacing of about 0.46 mm. The period is stated because the
+library's acceptance of a synthetic field depends on it, and 9 is the value
+that this record's construction was accepted at. `INV-012`'s last section
+measures that dependence and finds the library refusing half its images at
+period 13; no record in this repository measured it before that one.
 The blanked half is a uniform 255, in which there is no ridge and therefore no
 minutia: **a minutia can only occur in the half that carries the field.**
 
