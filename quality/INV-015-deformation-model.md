@@ -731,6 +731,35 @@ the 4.5 px floor is chance pairs rather than finger.
 
 ## Reproducing this
 
+**The instrument is in the tree.** The measurement is
+`implementation/library/warp_families.py`, the implementation check of `P-3`
+is `implementation/library/warp_families_identity.py`, and the tables above
+are printed by `implementation/library/warp_families_report.py`; the command
+form that runs all three is `scripts/measure_warp_families.sh`. The record was
+written from a run of that code before it was committed; the committed module
+is the same code with its driver wrapped in a function, so that it is imported
+rather than invoked, which `implementation/library/README.md` and `REF-013`
+decision 3 require. Re-run from the tree it prints every table above from
+`DB1_B` line for line, and the identity check returns the four rows the Method
+quotes. Its `DB1_B` aggregate agrees to float32 rather than field for field,
+because the aggregate this record was written from was computed before the
+accumulators were narrowed to float32 for memory; no figure the record prints
+moves.
+
+**The instrument was made faster after this record was written, and returns
+the same bytes.** `warp_families.py` was vectorised and then given a process
+pool, in the commits `code: make the warp-family instrument scale past ten
+fingers` and the audit fixes it carries. Re-run through
+`scripts/measure_warp_families.sh` on 2026-09-09, on a 13th Gen Intel Core
+i9-13900HX, twenty-four cores and thirty-two threads: the `DB1_B` aggregate is
+byte for byte the aggregate the instrument returned before the change, both
+from the pool and with `INV015_SERIAL=1` forcing the sequential path, and the
+`DB1_A` aggregate is byte for byte the one the `DB1_A` sections above were
+written from. The tables this record prints are identical line for line
+rendered from the record's own aggregate, from the reproduction and from the
+pooled run. `DB1_B` takes 21.1 s where the instrument this record was written
+from takes 348.9 s, and `DB1_A` takes 3 min 56 s.
+
 Every command was run on 2026-09-08 against the tree at `b0a35f7` and the image
 built from its `Dockerfile`, image id
 `sha256:e0ded5a5dcc8f594df58ab904be76605ad26492da834130592091b1348f7c3fc`.

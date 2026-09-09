@@ -481,6 +481,15 @@ apart here for that reason.
 
 ## Reproducing this
 
+**The instrument is in the tree.** The measurement is
+`implementation/library/extractor_difference.py` and its command form is
+`scripts/measure_extractor_difference.sh`. The record was written from a run
+of that code before it was committed; the committed module is the same code
+with its driver wrapped in a function, so that it is imported rather than
+invoked, which `implementation/library/README.md` and `REF-013` decision 3
+require. Re-run from the tree on both subsets it returns an aggregate
+identical to the one this record is written from, field for field.
+
 Every command was run on 2026-09-08 against the tree at `f45295e` and the image
 built from its `Dockerfile`, image id
 `sha256:e0ded5a5dcc8f594df58ab904be76605ad26492da834130592091b1348f7c3fc`. The

@@ -461,6 +461,16 @@ refinement takes it.
 
 ## Reproducing this
 
+**The instrument is in the tree.** The origin test of F-3 is
+`implementation/library/coordinate_frames.py`, and the worked example of F-1
+and F-2 together with F-4, F-5 and F-6 are
+`implementation/library/coordinate_frames_fixture.py`; the command form that
+runs both is `scripts/measure_coordinate_frames.sh`. The record was written
+from a run of that code before it was committed; the committed module is the
+same code with its driver wrapped in a function, so that it is imported rather
+than invoked, which `implementation/library/README.md` and `REF-013` decision
+3 require. Re-run from the tree it prints every number below unchanged.
+
 Every command was run on 2026-09-08 against the tree at `7cbe80b`. `$SP` is a
 scratch directory outside the tree and `$FIX` is the read-only mount of the
 FVC2002 `Db1_b` images. No corpus image, minutia or template leaves a

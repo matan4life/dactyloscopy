@@ -350,6 +350,24 @@ brief's own definition, and the one place where the definition is ambiguous.
 
 ## Reproducing this
 
+**The instrument is in the tree.** The measurement is
+`implementation/library/noise_floor.py` and its command form is
+`scripts/measure_noise_floor.sh`. The record was written from a run of that
+code before it was committed; the committed module is the same code with its
+driver wrapped in a function, so that it is imported rather than invoked,
+which `implementation/library/README.md` and `REF-013` decision 3 require.
+Re-run from the tree it returns an aggregate identical to the one this record
+is written from, field for field.
+
+**The instrument was made faster after this record was written, and returns
+the same bytes.** `noise_floor.py` was given a process pool, one image per
+task, in the commit `code: run the noise-floor instrument one image per core`.
+Re-run through `scripts/measure_noise_floor.sh` on 2026-09-09, on a 13th Gen
+Intel Core i9-13900HX, twenty-four cores and thirty-two threads: the `DB1_B`
+aggregate is byte for byte the aggregate this record was written from, both
+from the pool and with `INV016_SERIAL=1` forcing the sequential path. It takes
+7.2 s where it took 99.7 s.
+
 Every command was run on 2026-09-08 against the tree at `f844aae` and the image
 built from its `Dockerfile`, image id
 `sha256:e0ded5a5dcc8f594df58ab904be76605ad26492da834130592091b1348f7c3fc`.
