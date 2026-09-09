@@ -11,10 +11,20 @@ Imported, never invoked as a command, as `REF-013` decision 3 requires; the
 command form is `scripts/measure_warp_families.sh`, which imports and calls.
 
 `measure(src_dir, tag)` returns the aggregate the record is written from. Every
-minutia stays inside this process: what comes back is counts, residual
-summaries and fitted coefficients, never a position.
+minutia stays inside this run: positions are read, forked into the worker
+processes of a pool and passed back between them over a pipe, and they reach
+no file and no return value. What comes back is counts, residual summaries and
+fitted coefficients, never a position.
+
+The pool is there because a corpus is eight hundred fingers, not ten. It moves
+no number, and the argument for that is one claim: every draw from the module
+generator below is made in this process, in the order a sequential run makes
+it. `ransac()` is split into `ransac_sample`, which draws, and `ransac_score`,
+which does not, so the claim can be checked by reading. `INV015_SERIAL=1`
+takes the sequential path, which returns the same bytes.
 """
 import math
+import multiprocessing
 import os
 import subprocess
 from array import array
@@ -45,20 +55,28 @@ rng = np.random.default_rng(SEED)
 
 
 # ------------------------------------------------------------- extraction
+def _scratch():
+    """A scratch directory this process owns, so extraction can be pooled."""
+    d = os.path.join(WORK, str(os.getpid()))
+    os.makedirs(d, exist_ok=True)
+    return d
+
+
 def extract(path):
+    wk = _scratch()
     img = Image.open(path).convert("L")
     w, h = img.size
-    img.save("%s/a.png" % WORK)
-    subprocess.run(["mindtct", "%s/a.png" % WORK, "%s/a" % WORK], check=True,
+    img.save("%s/a.png" % wk)
+    subprocess.run(["mindtct", "%s/a.png" % wk, "%s/a" % wk], check=True,
                    capture_output=True)
     xyt = np.array([[float(v) for v in l.split()]
-                    for l in open("%s/a.xyt" % WORK)])
+                    for l in open("%s/a.xyt" % wk)])
     q = np.array([[int(v) for v in l.split()]
-                  for l in open("%s/a.qm" % WORK)])
+                  for l in open("%s/a.qm" % wk)])
     lcm = np.array([[int(v) for v in l.split()]
-                    for l in open("%s/a.lcm" % WORK)])
-    for e in os.listdir(WORK):
-        os.remove(os.path.join(WORK, e))
+                    for l in open("%s/a.lcm" % wk)])
+    for e in os.listdir(wk):
+        os.remove(os.path.join(wk, e))
     mask = q >= QM_T
     ys, xs = np.nonzero(mask)
     area = float(len(xs)) * BLOCK * BLOCK
@@ -74,31 +92,46 @@ def extract(path):
 
 
 # --------------------------------------------------------------- geometry
+# Bound once: wprocrustes and huber_w are the inner loop of every fit, and on
+# arrays of ten to sixty rows the attribute lookups are a measurable share of a
+# call.
+_CONCATENATE = np.concatenate
+_REDUCE = np.add.reduce
+_ARRAY = np.array
+_HYPOT = np.hypot
+_FMAX = np.fmax
+
+
 def rot(th):
     c, s = math.cos(th), math.sin(th)
     return np.array([[c, -s], [s, c]])
 
 
 def wprocrustes(S, T, w, scale=False):
-    Wt = w.sum()
-    ms = (S * w[:, None]).sum(0) / Wt
-    mt = (T * w[:, None]).sum(0) / Wt
-    s0, t0 = S - ms, T - mt
-    num = float((w * (s0[:, 0] * t0[:, 1] - s0[:, 1] * t0[:, 0])).sum())
-    den = float((w * (s0[:, 0] * t0[:, 0] + s0[:, 1] * t0[:, 1])).sum())
+    ST = _CONCATENATE((S, T), axis=1)
+    m = (ST * w[:, None]).sum(0)
+    m /= _REDUCE(w)
+    d = ST - m
+    dx = d[:, 0]
+    dy = d[:, 1]
+    ex = d[:, 2]
+    ey = d[:, 3]
+    num = float(_REDUCE(w * (dx * ey - dy * ex)))
+    den = float(_REDUCE(w * (dx * ex + dy * ey)))
     th = math.atan2(num, den)
-    sc = (math.hypot(num, den) / float((w * (s0 ** 2).sum(1)).sum())
+    sc = (math.hypot(num, den) / float(_REDUCE(w * (dx * dx + dy * dy)))
           if scale else 1.0)
-    R = rot(th)
-    return sc, R, mt - sc * (R @ ms), th
+    c = math.cos(th)
+    s = math.sin(th)
+    R = _ARRAY(((c, -s), (s, c)))
+    v = R.dot(m[:2])
+    if sc != 1.0:
+        v = sc * v
+    return sc, R, m[2:] - v, th
 
 
 def huber_w(res):
-    d = np.hypot(res[:, 0], res[:, 1])
-    w = np.ones(len(d))
-    big = d > HUBER
-    w[big] = HUBER / d[big]
-    return w
+    return HUBER / _FMAX(_HYPOT(res[:, 0], res[:, 1]), HUBER)
 
 
 def hull(P):
@@ -136,6 +169,25 @@ def in_hull(H, pts):
 
 
 # ---------------------------------------------------------------- models
+def _recurred(seen, outs, key, it, iters):
+    """Short-circuit an IRLS loop that has started to repeat itself.
+
+    Every fitter below is a deterministic map from its weight vector to the
+    next one, so once a weight vector recurs the iteration is in a cycle and
+    the remaining iterations are already known.  `key` identifies the state
+    at the top of iteration `it`; if it was first seen at iteration `first`,
+    the cycle has length `it - first` and the state the full `iters` loop
+    would have ended on is `outs[first + (iters - 1 - first) % (it - first)]`.
+    Returning that is the same value the loop returns, not an approximation
+    of it: the loop is cut short only where its remaining output is already
+    in hand."""
+    first = seen.get(key)
+    if first is None:
+        seen[key] = it
+        return None
+    return outs[first + (iters - 1 - first) % (it - first)]
+
+
 def fit_radial(V, T, powers, iters=60):
     """q = R (V * h(r)) + t,  h = 1 + sum c_k r^(k-1)/RS^k."""
     r = np.hypot(V[:, 0], V[:, 1])
@@ -144,20 +196,37 @@ def fit_radial(V, T, powers, iters=60):
     c = np.zeros(len(powers))
     w = np.ones(len(V))
     R, t = np.eye(2), np.zeros(2)
-    for _ in range(iters):
-        h = 1.0 + (B @ c if powers else np.zeros(len(V)))
+    seen, outs = {}, []
+    if not powers:
+        S = V * (1.0 + np.zeros(len(V)))[:, None]
+        for it in range(iters):
+            done = _recurred(seen, outs, w.tobytes(), it, iters)
+            if done is not None:
+                R, t = done
+                break
+            _, R, t, _ = wprocrustes(S, T, w)
+            w = huber_w(T - (S @ R.T + t))
+            outs.append((R, t))
+        return {"kind": "radial", "powers": powers, "c": c, "R": R, "t": t}
+    A = np.concatenate([V[:, 0:1] * B, V[:, 1:2] * B], axis=0)
+    h = 1.0 + B @ c
+    S = V * h[:, None]
+    for it in range(iters):
+        done = _recurred(seen, outs, (c.tobytes(), w.tobytes()), it, iters)
+        if done is not None:
+            c, R, t = done
+            break
+        _, R, t, _ = wprocrustes(S, T, w)
+        D = (T - t) @ R - V
+        sw = np.sqrt(np.concatenate([w, w]))
+        c = np.linalg.lstsq(A * sw[:, None],
+                            np.concatenate([D[:, 0], D[:, 1]]) * sw,
+                            rcond=None)[0]
+        h = 1.0 + B @ c
         S = V * h[:, None]
         _, R, t, _ = wprocrustes(S, T, w)
-        if powers:
-            Z = (T - t) @ R
-            A = np.concatenate([V[:, 0:1] * B, V[:, 1:2] * B], axis=0)
-            b = np.concatenate([(Z - V)[:, 0], (Z - V)[:, 1]])
-            sw = np.sqrt(np.concatenate([w, w]))
-            c = np.linalg.lstsq(A * sw[:, None], b * sw, rcond=None)[0]
-            h = 1.0 + B @ c
-            S = V * h[:, None]
-            _, R, t, _ = wprocrustes(S, T, w)
         w = huber_w(T - (S @ R.T + t))
+        outs.append((c, R, t))
     return {"kind": "radial", "powers": powers, "c": c, "R": R, "t": t}
 
 
@@ -173,18 +242,30 @@ def apply_radial(m, V):
 def fit_trans(V, T, iters=60):
     w = np.ones(len(V))
     t = np.zeros(2)
-    for _ in range(iters):
+    seen, outs = {}, []
+    for it in range(iters):
+        done = _recurred(seen, outs, w.tobytes(), it, iters)
+        if done is not None:
+            t = done
+            break
         t = ((T - V) * w[:, None]).sum(0) / w.sum()
         w = huber_w(T - (V + t))
+        outs.append(t)
     return {"kind": "trans", "t": t}
 
 
 def fit_sim(V, T, iters=60):
     w = np.ones(len(V))
     sc, R, t = 1.0, np.eye(2), np.zeros(2)
-    for _ in range(iters):
+    seen, outs = {}, []
+    for it in range(iters):
+        done = _recurred(seen, outs, w.tobytes(), it, iters)
+        if done is not None:
+            sc, R, t = done
+            break
         sc, R, t, _ = wprocrustes(V, T, w, scale=True)
         w = huber_w(T - (sc * (V @ R.T) + t))
+        outs.append((sc, R, t))
     return {"kind": "sim", "s": sc, "R": R, "t": t}
 
 
@@ -193,11 +274,17 @@ def fit_affine(V, T, iters=60):
     A = np.eye(2)
     t = np.zeros(2)
     X = np.concatenate([V, np.ones((len(V), 1))], axis=1)
-    for _ in range(iters):
+    seen, outs = {}, []
+    for it in range(iters):
+        done = _recurred(seen, outs, w.tobytes(), it, iters)
+        if done is not None:
+            A, t = done
+            break
         sw = np.sqrt(w)[:, None]
         sol = np.linalg.lstsq(X * sw, T * sw, rcond=None)[0]
         A, t = sol[0:2].T, sol[2]
         w = huber_w(T - (V @ A.T + t))
+        outs.append((A, t))
     return {"kind": "affine", "A": A, "t": t}
 
 
@@ -208,24 +295,61 @@ def _U(d2):
     return out
 
 
-def fit_tps(V, T, lam, iters=20):
+_TPS_BASIS = {}
+_TPS_BASIS_ORDER = []
+_TPS_BASIS_MAX = 8
+
+
+def _tps_basis(V):
+    """The TPS kernel and affine block, which depend on V and nothing else.
+
+    `fit_tps` is called once per lambda in LAMBDAS and once more for the
+    full fit, all on the same V, so the same pair of matrices is rebuilt
+    five or six times over.  Keying on the bytes of V returns the identical
+    arrays rather than an equal-looking rebuild.  The cache is bounded at
+    _TPS_BASIS_MAX entries and evicted oldest first, so it cannot grow with
+    the corpus."""
+    key = (V.shape, V.dtype.str, V.tobytes())
+    hit = _TPS_BASIS.get(key)
+    if hit is not None:
+        return hit
     n = len(V)
     d2 = ((V[:, None, :] - V[None, :, :]) ** 2).sum(-1)
-    K = _U(d2)
-    P = np.concatenate([np.ones((n, 1)), V], axis=1)
+    basis = (_U(d2), np.concatenate([np.ones((n, 1)), V], axis=1))
+    _TPS_BASIS[key] = basis
+    _TPS_BASIS_ORDER.append(key)
+    if len(_TPS_BASIS_ORDER) > _TPS_BASIS_MAX:
+        del _TPS_BASIS[_TPS_BASIS_ORDER.pop(0)]
+    return basis
+
+
+def fit_tps(V, T, lam, iters=20):
+    n = len(V)
+    K, P = _tps_basis(V)
+    M = np.zeros((n + 3, n + 3))
+    M[:n, :n] = K
+    M[:n, n:] = P
+    M[n:, :n] = P.T
+    rhs = np.zeros((n + 3, 2))
+    rhs[:n] = T
+    di = (np.arange(n), np.arange(n))
+    Kd = K[di]
     w = np.ones(n)
-    sol = None
-    for _ in range(iters):
-        M = np.zeros((n + 3, n + 3))
-        M[:n, :n] = K + lam * np.diag(1.0 / np.maximum(w, 1e-6))
-        M[:n, n:] = P
-        M[n:, :n] = P.T
-        rhs = np.zeros((n + 3, 2))
-        rhs[:n] = T
+    seen = {}
+    sols = []
+    for i in range(iters):
+        dvec = lam * (1.0 / np.maximum(w, 1e-6))
+        key = dvec.tobytes()
+        j = seen.get(key)
+        if j is not None:
+            return {"kind": "tps", "V": V,
+                    "sol": sols[j + (iters - 1 - j) % (i - j)]}
+        seen[key] = i
+        M[di] = Kd + dvec
         sol = np.linalg.lstsq(M, rhs, rcond=None)[0]
-        pred = K @ sol[:n] + P @ sol[n:]
-        w = huber_w(T - pred)
-    return {"kind": "tps", "V": V, "sol": sol}
+        sols.append(sol)
+        w = huber_w(T - (K @ sol[:n] + P @ sol[n:]))
+    return {"kind": "tps", "V": V, "sol": sols[-1]}
 
 
 def apply_model(m, V):
@@ -260,11 +384,17 @@ for l in LAMBDAS:
 
 
 # --------------------------------------------------------------- ransac
-def ransac(A, B):
-    """Translation and rotation only, by RANSAC over position pairs."""
+def ransac_sample(A, B):
+    """Draw the candidate correspondences, and keep the consistent ones.
+
+    This is the only part of the alignment that touches the module
+    generator.  It is separated so that it can be run in one process, in
+    pair order, while the scoring below - which draws nothing - runs in a
+    pool: the stream of draws is then the stream a sequential run makes,
+    and the alignments are the same alignments."""
     n, m = len(A), len(B)
     if n < 2 or m < 2:
-        return None, 0
+        return None
     dA = np.hypot(*(A[:, None, :] - A[None, :, :]).T).T
     dB = np.hypot(*(B[:, None, :] - B[None, :, :]).T).T
     K = 200000
@@ -276,7 +406,14 @@ def ransac(A, B):
     ok = (da > RANSAC_MINSEP) & (np.abs(da - db) <= RANSAC_DTOL)
     i1, i2, j1, j2 = i1[ok][:RANSAC_N], i2[ok][:RANSAC_N], j1[ok][:RANSAC_N], j2[ok][:RANSAC_N]
     if not len(i1):
-        return None, 0
+        return None
+    return i1, i2, j1, j2
+
+
+def ransac_score(A, B, sample):
+    """Score every candidate, keep the best, refine it.  Draws nothing."""
+    n, m = len(A), len(B)
+    i1, i2, j1, j2 = sample
     va, vb = A[i2] - A[i1], B[j2] - B[j1]
     th = np.arctan2(vb[:, 1], vb[:, 0]) - np.arctan2(va[:, 1], va[:, 0])
     c, sn = np.cos(th), np.sin(th)
@@ -310,6 +447,14 @@ def ransac(A, B):
     return (R, t), int((dd.min(1) <= RANSAC_INLIER).sum())
 
 
+def ransac(A, B):
+    """Translation and rotation only, by RANSAC over position pairs."""
+    sample = ransac_sample(A, B)
+    if sample is None:
+        return None, 0
+    return ransac_score(A, B, sample)
+
+
 def mutual_pairs(A2, B, tau):
     if not len(A2) or not len(B):
         return np.zeros((0, 2), dtype=int)
@@ -327,6 +472,279 @@ def band_of(r):
     return len(BANDS) - 2
 
 
+# --------------------------------------------------------------- parallel
+# The per-pair work below is pure: it consumes an alignment and produces
+# accumulator contributions, and it touches no random state.  That is what
+# lets it run in a pool without moving a number - every draw from the module
+# generator is made in the parent, in the order it was made when this file
+# was sequential, and the contributions are merged back in pair order.
+CONTRASTS = [("M4", "M5"), ("M6", "M4"), ("M4", "M1"), ("M3", "M1"),
+             ("M5", "M1"), ("M7", "M1"), ("M8l10000", "M1"), ("M8l0", "M1"),
+             ("M2", "M3"), ("M7", "M4"), ("M8l10000", "M7")]
+
+_IM = {}
+
+
+def _evaluate(V, T, r, tau, res_ho, res_fre, paired):
+    """5-fold CV over the frozen correspondences, stratified by radius."""
+    n = len(V)
+    order = np.argsort(r)
+    fold = np.empty(n, dtype=int)
+    fold[order] = np.arange(n) % 5
+    out = {}
+    resmat = {}
+    for name, fitter in MODELS:
+        need = MINPTS[name]
+        col = np.full(n, np.nan)
+        ins_all = np.zeros(n, dtype=bool)
+        for k in range(5):
+            tr = fold != k
+            te = ~tr
+            if int(tr.sum()) < need or int(te.sum()) == 0:
+                continue
+            m = fitter(V[tr], T[tr])
+            col[te] = np.hypot(*(T[te] - apply_model(m, V[te])).T)
+            ins_all[te] = in_hull(hull(V[tr]), V[te])
+        resmat[name] = (col, ins_all)
+        for i in range(n):
+            if not math.isnan(col[i]):
+                res_ho.setdefault((tau, name, band_of(r[i]),
+                                   bool(ins_all[i])), []).append(float(col[i]))
+        m = fitter(V, T)
+        fre = np.hypot(*(T - apply_model(m, V)).T)
+        for dd, rr in zip(fre, r):
+            res_fre.setdefault((tau, name, band_of(rr)), []).append(float(dd))
+        out[name] = (m, None, fre)
+    for a, b in CONTRASTS:
+        ca, cb = resmat[a][0], resmat[b][0]
+        for i in range(n):
+            if not (math.isnan(ca[i]) or math.isnan(cb[i])):
+                paired.setdefault((tau, band_of(r[i]), a, b), []).append(
+                    float(ca[i] - cb[i]))
+    return out
+
+
+def _extract_work(path):
+    """extract(), as a pool task.  It draws no random number and its result
+    depends on the image alone, so a pool moves no number."""
+    return extract(path)
+
+
+def _pair_work(task):
+    """Everything one genuine pair contributes, given its alignment."""
+    g, fa, fb, ai, bi, sample = task
+    A, B = _IM[fa]["p"], _IM[fb]["p"]
+    (R0, t0), nin = ransac_score(A, B, sample)
+    A2 = A @ R0.T + t0
+    ca = _IM[fa]["c"]
+    ransac_rot = math.degrees(math.atan2(R0[1, 0], R0[0, 0]))
+    out = {"g": g, "fa": fa, "fb": fb, "ai": ai, "bi": bi, "ca": ca,
+           "pair_rows": [], "radial_hist": {}, "hull_cov": {},
+           "excluded": [], "res_ho": {}, "res_fre": {}, "paired": {},
+           "core_res": {}, "m4_row": None, "r5_row": None,
+           "finger_coef_row": None, "keep_pr": {}}
+    for tau in TAUS:
+        pr = mutual_pairs(A2, B, tau)
+        if tau in (8, 15):
+            out["keep_pr"][tau] = pr
+        N = len(pr)
+        V = A[pr[:, 0]] - ca if N else np.zeros((0, 2))
+        T = B[pr[:, 1]] if N else np.zeros((0, 2))
+        rr = np.hypot(V[:, 0], V[:, 1]) if N else np.zeros(0)
+        out["pair_rows"].append([g, fa, fb, tau, N])
+        h = np.zeros(len(BANDNAMES))
+        for x in rr:
+            h[band_of(x)] += 1
+        out["radial_hist"][tau] = h
+        blocks = _IM[fa]["blocks"] - ca
+        rb = np.hypot(blocks[:, 0], blocks[:, 1])
+        Hh = hull(V) if N >= 3 else np.zeros((0, 2))
+        ins = (in_hull(Hh, blocks) if len(Hh) >= 3
+               else np.zeros(len(blocks), dtype=bool))
+        hc = np.zeros((len(BANDNAMES), 2))
+        for x, i2 in zip(rb, ins):
+            hc[band_of(x)] += [1.0, 1.0 if i2 else 0.0]
+        out["hull_cov"][tau] = hc
+        if N < NMIN:
+            out["excluded"].append(tau)
+            continue
+        ev = _evaluate(V, T, rr, tau, out["res_ho"], out["res_fre"],
+                       out["paired"])
+        if tau == 15:
+            m4, m2, m3 = ev["M4"][0], ev["M2"][0], ev["M3"][0]
+            jc, jr = [], []
+            for k in range(N):
+                sel = np.ones(N, dtype=bool)
+                sel[k] = False
+                mk = fit_radial(V[sel], T[sel], (1, 3))
+                jc.append(mk["c"])
+                jr.append(math.degrees(math.atan2(mk["R"][1, 0],
+                                                  mk["R"][0, 0])))
+            jc = np.array(jc)
+            jr = np.array(jr)
+            sd_rot = float(math.sqrt((N - 1.0) / N
+                                     * ((jr - jr.mean()) ** 2).sum()))
+            cov = (N - 1.0) / N * ((jc - jc.mean(0)).T @ (jc - jc.mean(0)))
+            out["m4_row"] = {
+                "finger": g, "N": N,
+                "c1": float(m4["c"][0]), "c3": float(m4["c"][1]),
+                "cov": [[float(cov[0, 0]), float(cov[0, 1])],
+                        [float(cov[1, 0]), float(cov[1, 1])]]}
+            out["r5_row"] = {
+                "s": float(m2["s"]),
+                "s_from_c1": float(1.0 + m3["c"][0] / RS),
+                "rms_m2": float(np.sqrt((np.hypot(
+                    *(T - apply_model(m2, V)).T) ** 2).mean())),
+                "rms_m3": float(np.sqrt((np.hypot(
+                    *(T - apply_model(m3, V)).T) ** 2).mean())),
+                "sqrt_area_ratio": float(math.sqrt(
+                    _IM[fb]["area"] / _IM[fa]["area"]))}
+            th = math.atan2(m4["R"][1, 0], m4["R"][0, 0])
+            out["finger_coef_row"] = [
+                ai, bi, float(m4["c"][0]), float(m4["c"][1]),
+                math.degrees(th), N, float(math.sqrt(cov[0, 0])),
+                float(math.sqrt(cov[1, 1])), sd_rot, nin, ransac_rot]
+            for rho in RHOS:
+                sel = rr <= rho
+                if int(sel.sum()) < 4 or int((~sel).sum()) == 0:
+                    continue
+                m1 = fit_radial(V[sel], T[sel], ())
+                d = np.hypot(*(T[~sel] - apply_model(m1, V[~sel])).T)
+                for dd, x in zip(d, rr[~sel]):
+                    out["core_res"].setdefault(
+                        (rho, band_of(x)), []).append(float(dd))
+    return out
+
+
+def _consistent_work(task):
+    """The post-hoc pass on one pair of the consistent subset."""
+    fa, fb, ca, prs = task
+    A, B = _IM[fa]["p"], _IM[fb]["p"]
+    res, paired = {}, {}
+    for tau in (8, 15):
+        pr = prs.get(tau)
+        if pr is None or len(pr) < NMIN:
+            continue
+        V = A[pr[:, 0]] - ca
+        T = B[pr[:, 1]]
+        rr = np.hypot(V[:, 0], V[:, 1])
+        n = len(V)
+        order = np.argsort(rr)
+        fold = np.empty(n, dtype=int)
+        fold[order] = np.arange(n) % 5
+        resmat = {}
+        for name, fitter in MODELS:
+            col = np.full(n, np.nan)
+            for k in range(5):
+                tr, te = fold != k, fold == k
+                if int(tr.sum()) < MINPTS[name] or int(te.sum()) == 0:
+                    continue
+                m = fitter(V[tr], T[tr])
+                col[te] = np.hypot(*(T[te] - apply_model(m, V[te])).T)
+            resmat[name] = col
+            for i in range(n):
+                if not math.isnan(col[i]):
+                    res.setdefault((tau, name, band_of(rr[i])), []).append(
+                        float(col[i]))
+        for a, b in CONTRASTS:
+            ca_, cb_ = resmat[a], resmat[b]
+            for i in range(n):
+                if not (math.isnan(ca_[i]) or math.isnan(cb_[i])):
+                    paired.setdefault((tau, band_of(rr[i]), a, b), []).append(
+                        float(ca_[i] - cb_[i]))
+    return res, paired
+
+
+def _impostor_work(task):
+    """One impostor pair: the alignment scored, then the same 5-fold CV."""
+    fa, fb, sample = task
+    A, B = _IM[fa]["p"], _IM[fb]["p"]
+    (R0, t0), _ = ransac_score(A, B, sample)
+    pr = mutual_pairs(A @ R0.T + t0, B, 15)
+    out = {"n": len(pr), "res": {}}
+    if len(pr) < NMIN:
+        return out
+    ca = _IM[fa]["c"]
+    V = A[pr[:, 0]] - ca
+    T = B[pr[:, 1]]
+    rr = np.hypot(V[:, 0], V[:, 1])
+    n = len(V)
+    order = np.argsort(rr)
+    fold = np.empty(n, dtype=int)
+    fold[order] = np.arange(n) % 5
+    for name, fitter in MODELS:
+        for k in range(5):
+            tr, te = fold != k, fold == k
+            if int(tr.sum()) < MINPTS[name] or int(te.sum()) == 0:
+                continue
+            m = fitter(V[tr], T[tr])
+            d = np.hypot(*(T[te] - apply_model(m, V[te])).T)
+            for dd, x in zip(d, rr[te]):
+                out["res"].setdefault((name, band_of(x)), []).append(float(dd))
+    return out
+
+
+def _cpus():
+    """How many workers this process may actually run at once.
+
+    os.cpu_count() reports the machine, not the share of it a container was
+    given, and a pool sized to the machine inside a quota of four cores
+    thrashes.  The affinity mask catches cpuset and taskset; the cgroup v2
+    and v1 quota files catch --cpus.  None of this reaches a number - the
+    output does not depend on the worker count, which is what INV015_SERIAL
+    exists to demonstrate - so a bad reading costs speed and nothing else."""
+    try:
+        n = len(os.sched_getaffinity(0))
+    except AttributeError:
+        n = os.cpu_count() or 1
+    for path, sep in (("/sys/fs/cgroup/cpu.max", " "),
+                      ("/sys/fs/cgroup/cpu/cpu.cfs_quota_us", None)):
+        try:
+            with open(path) as fp:
+                text = fp.read().split()
+        except OSError:
+            continue
+        try:
+            if sep is None:
+                quota = int(text[0])
+                with open("/sys/fs/cgroup/cpu/cpu.cfs_period_us") as fp:
+                    period = int(fp.read())
+            else:
+                if text[0] == "max":
+                    continue
+                quota, period = int(text[0]), int(text[1])
+        except (OSError, ValueError, IndexError):
+            continue
+        if quota > 0 and period > 0:
+            n = min(n, max(1, quota // period))
+        break
+    return max(1, n)
+
+
+def _pool(tasks, fn):
+    """Map fn over tasks in order, in a pool if one is worth starting.
+
+    The results are yielded rather than collected, so that the caller folds
+    each one into its accumulators as it arrives and the parent never holds
+    more than a chunk of them: at twenty-two thousand pairs the collected
+    form is gigabytes of Python floats waiting to be narrowed to float32.
+    `imap` delivers in task order, which is what makes the merge a
+    sequential run's merge."""
+    n = _cpus()
+    if n < 2 or len(tasks) < 2 or os.environ.get("INV015_SERIAL"):
+        for t in tasks:
+            yield fn(t)
+        return
+    ctx = multiprocessing.get_context("fork")
+    # Capped: at four thousand tasks and above the uncapped chunk leaves a
+    # tail of work that one worker finishes alone.  Below that the value is
+    # unchanged, so a run measured before this cap runs the same way.
+    chunk = max(1, min(len(tasks) // (n * 4), 32))
+    with ctx.Pool(n) as pool:
+        for out in pool.imap(fn, tasks, chunksize=chunk):
+            yield out
+
+
 def measure(src_dir, tag):
     """Run the whole comparison over one subset directory."""
     os.makedirs(WORK, exist_ok=True)
@@ -338,11 +756,9 @@ def measure(src_dir, tag):
     print("%s: %d images, %d fingers" % (tag, len(names), len(by_finger)),
           flush=True)
 
-    IM = {}
-    for k, f in enumerate(names):
-        IM[f] = extract(os.path.join(src_dir, f))
-        if (k + 1) % 100 == 0:
-            print("  extracted %d/%d" % (k + 1, len(names)), flush=True)
+    IM = dict(zip(names, _pool([os.path.join(src_dir, f) for f in names],
+                               _extract_work)))
+    print("  extracted %d images" % len(IM), flush=True)
 
     W = IM[names[0]]["w"]
     H = IM[names[0]]["h"]
@@ -373,9 +789,6 @@ def measure(src_dir, tag):
     res_ho_c = defaultdict(lambda: array('f'))    # the same, on the consistent subset only
     paired_c = defaultdict(lambda: array('f'))
     pairdata = []
-    CONTRASTS = [("M4", "M5"), ("M6", "M4"), ("M4", "M1"), ("M3", "M1"),
-                 ("M5", "M1"), ("M7", "M1"), ("M8l10000", "M1"), ("M8l0", "M1"),
-                 ("M2", "M3"), ("M7", "M4"), ("M8l10000", "M7")]
     m4_rows = []
     r5_rows = []
     finger_coef = defaultdict(list)
@@ -383,133 +796,59 @@ def measure(src_dir, tag):
     ransac_fail = 0
 
 
-    def evaluate(V, T, r, pairs_tau, tau, tag_prefix, collect=True):
-        """5-fold CV over the frozen correspondences, stratified by radius."""
-        n = len(V)
-        order = np.argsort(r)
-        fold = np.empty(n, dtype=int)
-        fold[order] = np.arange(n) % 5
-        out = {}
-        resmat = {}
-        for name, fitter in MODELS:
-            need = MINPTS[name]
-            col = np.full(n, np.nan)
-            ins_all = np.zeros(n, dtype=bool)
-            for k in range(5):
-                tr = fold != k
-                te = ~tr
-                if int(tr.sum()) < need or int(te.sum()) == 0:
-                    continue
-                m = fitter(V[tr], T[tr])
-                col[te] = np.hypot(*(T[te] - apply_model(m, V[te])).T)
-                ins_all[te] = in_hull(hull(V[tr]), V[te])
-            resmat[name] = (col, ins_all)
-            if collect:
-                for i in range(n):
-                    if not math.isnan(col[i]):
-                        res_ho[(tau, name, band_of(r[i]),
-                                bool(ins_all[i]))].append(float(col[i]))
-            m = fitter(V, T)
-            fre = np.hypot(*(T - apply_model(m, V)).T)
-            if collect:
-                for dd, rr in zip(fre, r):
-                    res_fre[(tau, name, band_of(rr))].append(float(dd))
-            out[name] = (m, None, fre)
-        if collect:
-            for a, b in CONTRASTS:
-                ca, cb = resmat[a][0], resmat[b][0]
-                for i in range(n):
-                    if not (math.isnan(ca[i]) or math.isnan(cb[i])):
-                        paired[(tau, band_of(r[i]), a, b)].append(
-                            float(ca[i] - cb[i]))
-        return out
-
-
+    # Pass one, sequential: every draw from the module generator is made
+    # here, in the order it was made when this was one pass, so the
+    # alignments are the alignments the record was written from.
+    global _IM
+    _IM = IM
+    tasks = []
     for g in sorted(by_finger):
         fs = sorted(by_finger[g])
+        if len(fs) > 8:
+            # robust_incidence and incidence below allocate eight columns and
+            # index them with the impression number, and incidence fixes its
+            # degrees of freedom at len(rows) - 7.  Nine impressions raise
+            # IndexError inside a solver; refuse here, by name, instead.
+            # Generalising the two solvers is a decision, not a repair.
+            raise ValueError(
+                "finger %s has %d impressions; the incidence solvers are "
+                "written for eight" % (g, len(fs)))
         for ai in range(len(fs)):
             for bi in range(ai + 1, len(fs)):
                 fa, fb = fs[ai], fs[bi]
-                A, B = IM[fa]["p"], IM[fb]["p"]
-                al, nin = ransac(A, B)
-                if al is None:
+                sample = ransac_sample(IM[fa]["p"], IM[fb]["p"])
+                if sample is None:
                     ransac_fail += 1
                     continue
-                R0, t0 = al
-                A2 = A @ R0.T + t0
-                ca = IM[fa]["c"]
-                keep_pr = {}
-                ransac_rot = math.degrees(math.atan2(R0[1, 0], R0[0, 0]))
-                for tau in TAUS:
-                    pr = mutual_pairs(A2, B, tau)
-                    keep_pr[tau] = pr
-                    N = len(pr)
-                    V = A[pr[:, 0]] - ca if N else np.zeros((0, 2))
-                    T = B[pr[:, 1]] if N else np.zeros((0, 2))
-                    rr = np.hypot(V[:, 0], V[:, 1]) if N else np.zeros(0)
-                    pair_rows.append([g, fa, fb, tau, N])
-                    for x in rr:
-                        radial_hist[tau][band_of(x)] += 1
-                    blocks = IM[fa]["blocks"] - ca
-                    rb = np.hypot(blocks[:, 0], blocks[:, 1])
-                    Hh = hull(V) if N >= 3 else np.zeros((0, 2))
-                    ins = in_hull(Hh, blocks) if len(Hh) >= 3 else \
-                        np.zeros(len(blocks), dtype=bool)
-                    for x, i2 in zip(rb, ins):
-                        hull_cov[tau][band_of(x)] += [1.0, 1.0 if i2 else 0.0]
-                    if N < NMIN:
-                        excluded[tau] += 1
-                        continue
-                    out = evaluate(V, T, rr, pr, tau, g)
-                    if tau == 15:
-                        m4 = out["M4"][0]
-                        m2 = out["M2"][0]
-                        m3 = out["M3"][0]
-                        jc, jr = [], []
-                        for k in range(N):
-                            sel = np.ones(N, dtype=bool)
-                            sel[k] = False
-                            mk = fit_radial(V[sel], T[sel], (1, 3))
-                            jc.append(mk["c"])
-                            jr.append(math.degrees(math.atan2(mk["R"][1, 0],
-                                                              mk["R"][0, 0])))
-                        jc = np.array(jc)
-                        jr = np.array(jr)
-                        sd_rot = float(math.sqrt((N - 1.0) / N
-                                                 * ((jr - jr.mean()) ** 2).sum()))
-                        cov = (N - 1.0) / N * ((jc - jc.mean(0)).T @
-                                               (jc - jc.mean(0)))
-                        m4_rows.append({
-                            "finger": g, "N": N,
-                            "c1": float(m4["c"][0]), "c3": float(m4["c"][1]),
-                            "cov": [[float(cov[0, 0]), float(cov[0, 1])],
-                                    [float(cov[1, 0]), float(cov[1, 1])]]})
-                        r5_rows.append({
-                            "s": float(m2["s"]),
-                            "s_from_c1": float(1.0 + m3["c"][0] / RS),
-                            "rms_m2": float(np.sqrt((np.hypot(
-                                *(T - apply_model(m2, V)).T) ** 2).mean())),
-                            "rms_m3": float(np.sqrt((np.hypot(
-                                *(T - apply_model(m3, V)).T) ** 2).mean())),
-                            "sqrt_area_ratio": float(math.sqrt(
-                                IM[fb]["area"] / IM[fa]["area"]))})
-                        th = math.atan2(m4["R"][1, 0], m4["R"][0, 0])
-                        finger_coef[g].append(
-                            [ai, bi, float(m4["c"][0]), float(m4["c"][1]),
-                             math.degrees(th), N, float(math.sqrt(cov[0, 0])),
-                             float(math.sqrt(cov[1, 1])), sd_rot, nin,
-                             ransac_rot])
-                        for rho in RHOS:
-                            sel = rr <= rho
-                            if int(sel.sum()) < 4 or int((~sel).sum()) == 0:
-                                continue
-                            m1 = fit_radial(V[sel], T[sel], ())
-                            d = np.hypot(*(T[~sel] - apply_model(m1, V[~sel])).T)
-                            for dd, x in zip(d, rr[~sel]):
-                                core_res[(rho, band_of(x))].append(float(dd))
-                pairdata.append({"g": g, "ai": ai, "bi": bi, "A": A, "B": B,
-                                 "ca": ca, "pr": keep_pr})
-        print("  finger %s done" % g, flush=True)
+                tasks.append((g, fa, fb, ai, bi, sample))
+    print("  aligned %d pairs, %d refusals" % (len(tasks), ransac_fail),
+          flush=True)
+
+    # Pass two: the pure part, merged back in pair order.
+    for out in _pool(tasks, _pair_work):
+        pair_rows.extend(out["pair_rows"])
+        for tau, h in out["radial_hist"].items():
+            radial_hist[tau] += h
+        for tau, hc in out["hull_cov"].items():
+            hull_cov[tau] += hc
+        for tau in out["excluded"]:
+            excluded[tau] += 1
+        for k, v in out["res_ho"].items():
+            res_ho[k].extend(v)
+        for k, v in out["res_fre"].items():
+            res_fre[k].extend(v)
+        for k, v in out["paired"].items():
+            paired[k].extend(v)
+        for k, v in out["core_res"].items():
+            core_res[k].extend(v)
+        if out["m4_row"] is not None:
+            m4_rows.append(out["m4_row"])
+            r5_rows.append(out["r5_row"])
+            finger_coef[out["g"]].append(out["finger_coef_row"])
+        pairdata.append({"g": out["g"], "ai": out["ai"], "bi": out["bi"],
+                         "fa": out["fa"], "fb": out["fb"],
+                         "ca": out["ca"], "pr": out["keep_pr"]})
+    print("  %d pairs measured" % len(pairdata), flush=True)
 
 
     # -------------------------------- a post-hoc filter: consistent rotations
@@ -539,40 +878,13 @@ def measure(src_dir, tag):
             if abs(e) <= 5.0:
                 consistent.add((g, int(r[0]), int(r[1])))
 
-    for pd in pairdata:
-        key = (pd["g"], pd["ai"], pd["bi"])
-        if key not in consistent:
-            continue
-        for tau in (8, 15):
-            pr = pd["pr"].get(tau)
-            if pr is None or len(pr) < NMIN:
-                continue
-            V = pd["A"][pr[:, 0]] - pd["ca"]
-            T = pd["B"][pr[:, 1]]
-            rr = np.hypot(V[:, 0], V[:, 1])
-            n = len(V)
-            order = np.argsort(rr)
-            fold = np.empty(n, dtype=int)
-            fold[order] = np.arange(n) % 5
-            resmat = {}
-            for name, fitter in MODELS:
-                col = np.full(n, np.nan)
-                for k in range(5):
-                    tr, te = fold != k, fold == k
-                    if int(tr.sum()) < MINPTS[name] or int(te.sum()) == 0:
-                        continue
-                    m = fitter(V[tr], T[tr])
-                    col[te] = np.hypot(*(T[te] - apply_model(m, V[te])).T)
-                resmat[name] = col
-                for i in range(n):
-                    if not math.isnan(col[i]):
-                        res_ho_c[(tau, name, band_of(rr[i]))].append(float(col[i]))
-            for a, b in CONTRASTS:
-                ca_, cb_ = resmat[a], resmat[b]
-                for i in range(n):
-                    if not (math.isnan(ca_[i]) or math.isnan(cb_[i])):
-                        paired_c[(tau, band_of(rr[i]), a, b)].append(
-                            float(ca_[i] - cb_[i]))
+    ctasks = [(pd["fa"], pd["fb"], pd["ca"], pd["pr"]) for pd in pairdata
+              if (pd["g"], pd["ai"], pd["bi"]) in consistent]
+    for res, pr in _pool(ctasks, _consistent_work):
+        for kk, v in res.items():
+            res_ho_c[kk].extend(v)
+        for kk, v in pr.items():
+            paired_c[kk].extend(v)
 
     # ------------------------------------------ step 5, the eight impressions
     def incidence(rows, col, sdcol):
@@ -618,34 +930,17 @@ def measure(src_dir, tag):
         imp_pairs = [imp_pairs[int(i)] for i in sel]
     imp_res = defaultdict(lambda: array('f'))
     imp_n = []
+    itasks = []
     for a, b in imp_pairs:
         fa, fb = sorted(by_finger[a])[0], sorted(by_finger[b])[0]
-        A, B = IM[fa]["p"], IM[fb]["p"]
-        al, _ = ransac(A, B)
-        if al is None:
+        sample = ransac_sample(IM[fa]["p"], IM[fb]["p"])
+        if sample is None:
             continue
-        R0, t0 = al
-        pr = mutual_pairs(A @ R0.T + t0, B, 15)
-        imp_n.append(len(pr))
-        if len(pr) < NMIN:
-            continue
-        ca = IM[fa]["c"]
-        V = A[pr[:, 0]] - ca
-        T = B[pr[:, 1]]
-        rr = np.hypot(V[:, 0], V[:, 1])
-        n = len(V)
-        order = np.argsort(rr)
-        fold = np.empty(n, dtype=int)
-        fold[order] = np.arange(n) % 5
-        for name, fitter in MODELS:
-            for k in range(5):
-                tr, te = fold != k, fold == k
-                if int(tr.sum()) < MINPTS[name] or int(te.sum()) == 0:
-                    continue
-                m = fitter(V[tr], T[tr])
-                d = np.hypot(*(T[te] - apply_model(m, V[te])).T)
-                for dd, x in zip(d, rr[te]):
-                    imp_res[(name, band_of(x))].append(float(dd))
+        itasks.append((fa, fb, sample))
+    for out in _pool(itasks, _impostor_work):
+        imp_n.append(out["n"])
+        for k, v in out["res"].items():
+            imp_res[k].extend(v)
 
 
     def summarise(store, keyf):
