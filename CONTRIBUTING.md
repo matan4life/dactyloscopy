@@ -8,13 +8,15 @@ that everything here follows.
 ## The most valuable contribution
 
 The most valuable contribution is demonstrating that a number here is wrong.
-Nothing is published yet — there is no manifest, no run and no score vector —
-so there is nothing to recheck today. The intent is that every claim be
-recomputable from published observations: per-file checksums, pair lists and
-score vectors, described in [docs/data.md](docs/data.md). Once a number
-appears, recompute it from those; if you obtain a different value, open an
-investigation issue with the command you ran and the value you got. That
-report will be worth more than any patch.
+Nothing from a run is published yet — there is no run and no score vector —
+but the corpus's per-file checksums are, under `manifests/checksums/`, and so
+are the five measurements of 2026-09-08 in `quality/`, each with the command
+that reproduces it from the tree. The intent is that every claim be
+recomputable from published
+observations: per-file checksums, pair lists and score vectors, described in
+[docs/data.md](docs/data.md). Recompute a number from those; if you obtain a
+different value, open an investigation issue with the command you ran and the
+value you got. That report will be worth more than any patch.
 
 ## Issues
 

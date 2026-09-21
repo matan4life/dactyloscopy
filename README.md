@@ -5,11 +5,10 @@ produces can be traced to the data, the protocol, the metric definition and
 the code revision that produced it. The accounting is the product; the
 science is built on top of it.
 
-## Status: tools, no run
+## Status: measurements, no run
 
 This repository was created on 2026-09-03 and this section was last corrected
-on 2026-09-07. It held documents only until 2026-09-06; that is no longer the
-state, and the sentence saying so stood for a day longer than it was true.
+on 2026-09-21. It held documents only until 2026-09-06.
 
 What exists now: the licensing, citation metadata, issue taxonomy, directory
 contracts, the data policy and the commit convention it started with; the
@@ -17,10 +16,19 @@ investigation and refinement chain in `quality/`; four frozen manifests, two
 of them versions of the tools manifest, one a corpus and one the minutia canon
 format; a container image pinned by digest, carrying two NBIS tools and one
 extractor this repository drives through a caller of its own; the source of
-that caller, and a test suite that holds it to what it reads.
+that caller and a test suite that holds it to what it reads; and, under
+`implementation/library/` with a command form apiece under `scripts/`, the
+instruments of five investigations that measured the tools, three of them on
+the corpus: the coordinate frame and the angle each extractor reports, how the
+two extractors differ on the same images, which warp family predicts a
+held-out correspondence between two impressions of one finger, and the
+localization noise floor of one extractor. Each of those records names the
+command that reproduces it from the tree.
 
 What does not exist: a protocol, a metric, a run, a score vector, and any
-number to cite. No comparison has been made inside this system.
+matching result. No protocol has been run; the only matcher output in the tree
+is the six-pair `bozorth3` fixture that `MAN-tools.v2` freezes to check the
+tool is the tool.
 
 Nothing is carried over from an earlier codebase.
 
