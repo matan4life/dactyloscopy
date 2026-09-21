@@ -25,7 +25,7 @@ DATA_MOUNTS := -v "$(LABDATA_HOST)/raw:/data/raw:ro" -v "$(LABDATA_HOST)/derived
 REPO_MOUNT := -v "$(REPO):/work"
 
 .DEFAULT_GOAL := help
-.PHONY: help image shell test check-tools verify
+.PHONY: help image shell test check-tools verify run-matching reproduce-matching
 
 help: ## List the targets
 	@echo "Targets:"
@@ -93,3 +93,23 @@ check-tools: ## Verify the tools in the image against manifests/MAN-tools.v2.jso
 	  exit 1; \
 	fi
 	$(DOCKER) run --rm $(REPO_MOUNT) -v "$(FVC_DB1_B_HOST):/fixture:ro" -w /work "$(IMAGE)" bash scripts/check_tools.sh /fixture
+
+# The image carries no git. What a run record needs from the tree - the
+# revision, whether it was dirty, the branch - is read here on the host and
+# handed across in the environment, so the record can say where its code
+# came from. Typed by hand without these, the record forms but marks itself
+# provisional; the Makefile is the only place they are set, which is why a run
+# that supports a claim is started from here.
+RUN_CODE_REVISION := $(shell git rev-parse HEAD 2>/dev/null)
+RUN_TREE_DIRTY := $(shell git status --porcelain 2>/dev/null | wc -l | tr -d ' ')
+RUN_BRANCH := $(shell git rev-parse --abbrev-ref HEAD 2>/dev/null)
+RUN_IMAGE_ID := $(shell $(DOCKER) image inspect --format '{{.Id}}' "$(IMAGE)" 2>/dev/null)
+PROVENANCE := -e RUN_CODE_REVISION="$(RUN_CODE_REVISION)" -e RUN_TREE_DIRTY="$(RUN_TREE_DIRTY)" -e RUN_BRANCH="$(RUN_BRANCH)" -e RUN_IMAGE_ID="$(RUN_IMAGE_ID)"
+
+run-matching: ## One matching run on SUBSET (a manifest id); needs LABDATA
+	@if [ -z "$(LABDATA)" ] || [ -z "$(SUBSET)" ]; then 	  echo "LABDATA and SUBSET are both required, for example:"; 	  echo ""; 	  echo "  make run-matching LABDATA=/path/to/labdata SUBSET=fvc2002/DB1_B"; 	  echo ""; 	  echo "The record and its observation are written under"; 	  echo "\$$LABDATA/derived/inv017/<subset>, outside the tree."; 	  exit 1; 	fi
+	$(DOCKER) run --rm $(REPO_MOUNT) $(DATA_MOUNTS) -w /work -e LABDATA=/data $(PROVENANCE) "$(IMAGE)" bash scripts/run_matching.sh "$(SUBSET)"
+
+reproduce-matching: ## Re-run from a record under LABDATA/derived and compare; RECORD is its subdirectory
+	@if [ -z "$(LABDATA)" ] || [ -z "$(RECORD)" ]; then 	  echo "LABDATA and RECORD are both required, for example:"; 	  echo ""; 	  echo "  make reproduce-matching LABDATA=/path/to/labdata RECORD=inv017/fvc2002_DB1_B"; 	  echo ""; 	  echo "RECORD is relative to \$$LABDATA/derived."; 	  exit 1; 	fi
+	$(DOCKER) run --rm $(REPO_MOUNT) $(DATA_MOUNTS) -w /work -e LABDATA=/data "$(IMAGE)" bash scripts/reproduce_matching.sh "/data/derived/$(RECORD)"
