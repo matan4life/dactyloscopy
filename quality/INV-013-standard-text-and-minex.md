@@ -398,8 +398,9 @@ not drawn.
 - **`D-3` is not closed.** The part of it that `MAN-minutia.v1`'s `origin`
   rests on is now backed by the standard's own words. The part its
   `angle_direction` rests on — what the label `iso-19794-2` means as a
-  physical direction — is not: the 2005 sample says nothing about the angle at
-  all, and the 2011 sample says everything except which way along the tangent.
+  physical direction — is not: the 2005 sample carries no definition of the
+  angle — only the three things `F-1` lists, none of them a clause — and the
+  2011 sample says everything except which way along the tangent.
   A reader who takes `D-4` as settled by `INV-012` and `D-3` as settled by this
   record has taken from the two of them something neither contains.
 

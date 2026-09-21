@@ -144,9 +144,12 @@ the same optimal counts are 46.1 and 73.6 per cent on `DB1_B`, 46.6 and 71.7 on
 `DB1_A`.
 
 **The assignment rule matters less than the radius.** Greedy and optimal are
-identical up to r = 5 and differ by at most 0.6 per cent at r = 15; mutual is
-below both by up to 2.6 per cent at r = 15. The choice of r moves the answer by
-30 percentage points and the choice of rule by under one.
+identical up to r = 5 on `DB1_B` and within three pairs of each other up to
+r = 5 on `DB1_A`; at r = 15 they differ by 19 and 186 pairs, 0.7 and 0.6 per
+cent, and mutual is 85 and 751 pairs below optimal, 2.9 and 2.6 per cent. The
+choice of r moves the answer by nearly 30 percentage points; the choice between
+greedy and optimal moves it by half a point, and mutual sits 1.5 to 2.3 points
+below either.
 
 ### The frame, checked on corpus images
 

@@ -341,11 +341,14 @@ model was fitted on.
 | n inside/outside | 497/12 | 1101/77 | 1448/317 | 1332/796 | 591/934 | 135/565 |
 
 **The band is not the variable that matters; the hull is.** Inside the hull the
-residual is 4.2 to 4.9 px and **it does not grow with radius at all** — for
+residual is 4.02 to 4.90 px and **it does not grow with radius at all** — for
 every model the outermost band's inside-hull residual is the smallest in the
-row. Outside the hull it is 5.5 to 7.5 px everywhere. The apparent growth of
-`R-1` with radius in the earlier table is the changing mixture: at 0-30 nearly
-every held-out point is interpolated and at 150+ four in five are extrapolated.
+row. Outside the hull it is 6.1 to 7.5 px in every band from 30-60 outward. In
+0-30, where 12 held-out points fall outside the hull against 497 inside, it is
+4.66 to 5.64 px, and for the two best models barely above the inside value:
+4.66 against 4.59 and 4.82 against 4.72. The apparent growth of `R-1` with
+radius in the earlier table is the changing mixture: at 0-30 nearly every
+held-out point is interpolated and at 150+ four in five are extrapolated.
 
 ## `R-3` — the fit residual, for contrast
 
