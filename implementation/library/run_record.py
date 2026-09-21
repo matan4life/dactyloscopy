@@ -124,10 +124,9 @@ def compose(run, repo_root, created=None):
         "n_images": run["n_images"],
         "metrics": run["metrics"],
         "eer_readings": run["eer_readings"],
-        "eer_readings_note": ("Every reading the registered sentence for "
-                              "eer@1 leaves open, side by side; the value "
-                              "under metrics is the reading its definition "
-                              "text names."),
+        "eer_readings_note": ("Every reading an equal-error rate admits, "
+                              "side by side; the value under metrics is the "
+                              "reading its definition text names."),
         "observation": {"path": "observation.json",
                         "sha256": _sha256_bytes(obs_bytes),
                         "bytes": len(obs_bytes)},

@@ -12,10 +12,10 @@ input that went into them.
 Nothing here is a protocol decision. The pairs are the organisers' own
 `.MFR` and `.MFA` index files, read by the digests `MAN-fvc2002.v1` records
 for them and not by name; the tools are invoked exactly as `MAN-tools.v2`
-freezes them; the metric definitions are the two this repository registers
-in its working rules, implemented here to the letter and, where the letter
-leaves a choice, with the choice written into the definition text that
-travels with the number.
+freezes them; and the metric definitions are stated here in full, because
+no tracked file in this repository defines `eer@1` or `auc@1` - the names
+occur only in `docs/commits.md`'s illustrations - so the text below is the
+definition each number is computed under, and it travels with the number.
 
 Imported, never invoked as a command, as `REF-013` decision 3 requires; the
 command form is `scripts/run_matching.sh`, which imports and calls.
@@ -36,11 +36,11 @@ from PIL import Image
 
 WORK = os.environ.get("INV017_WORK", "/tmp/inv017")
 
-# The two metrics as this repository registers them. The text is the
-# definition; the code below is that text, and a reader who wants to check the
-# number against the definition reads both. Where the registered sentence
-# leaves a choice open, the choice is stated here rather than made silently,
-# and INV-017 reports each such choice as a fact about the definition.
+# The two metrics, defined in full. No tracked file defines either, so this
+# text is the definition; the code below is that text, and a reader who wants
+# to check the number against the definition reads both. Where an equal-error
+# rate can be read more than one way, the choice is stated here rather than
+# made silently, and INV-017 reports whether each choice moves the number.
 METRICS = {
     "eer@1": (
         "Threshold sweep over the distinct scores observed, and one threshold "
@@ -292,17 +292,15 @@ def eer_at_1(genuine, impostor):
 
 
 def eer_variants(genuine, impostor):
-    """Every reading the registered sentence for eer@1 leaves open, computed
-    side by side, so that INV-017 can say whether the choices METRICS["eer@1"]
-    makes change the number on this data.
+    """Every reading an equal-error rate admits, computed side by side, so
+    that INV-017 can say whether the choices METRICS["eer@1"] makes change
+    the number on this data.
 
-    The sentence fixes a sweep, a tie rule and the average, and leaves open:
-    whether a pair at the threshold is accepted (>= or >), whether the sweep
-    includes a threshold that rejects everything, and what a tie is a tie in
-    (the gap |FMR - FNMR|, taken here) - and, for the tie rule, whether
-    "smallest threshold" is the choice or its opposite. Each combination is
-    returned under a name; the registered reading is `>=, with reject-all,
-    smallest`."""
+    The open choices: whether a pair at the threshold is accepted (>= or >),
+    whether the sweep includes a threshold that rejects everything, and, on a
+    tie in the gap |FMR - FNMR|, whether the smallest or the largest threshold
+    is taken. Each combination is returned under a name; the reading
+    METRICS["eer@1"] states is `>=, with reject-all, smallest`."""
     g = np.asarray(genuine, dtype=np.int64)
     i = np.asarray(impostor, dtype=np.int64)
     base = np.unique(np.concatenate([g, i]))
