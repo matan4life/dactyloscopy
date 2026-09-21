@@ -147,8 +147,15 @@ def write(record, obs_bytes, out_dir):
 
 # ------------------------------------------------------------- the checks
 def rederive(record_dir):
-    """From the record directory alone: does the observation give back the
-    numbers the record states? Returns what was compared and any gap."""
+    """From the record directory, by the instrument's own metric code: does
+    the observation give back the numbers the record states?
+
+    This checks that the observation is the observation of the record and
+    that the record's counts and digests are the observation's. It does not
+    check that the definition texts suffice on their own - that needs a
+    reader who has not seen this code, and INV-017 F-4 is that check. The
+    rank form of auc@1 is compared here with the direct pairwise count,
+    which is the other half of its definition text."""
     with open(os.path.join(record_dir, "results.json"),
               encoding="utf-8") as fp:
         record = json.load(fp)
@@ -170,9 +177,12 @@ def rederive(record_dir):
                        "threshold_equal":
                            at["threshold"] ==
                            record["metrics"]["eer@1"]["at"]["threshold"]}
+    pairwise = matching.auc_pairwise(g, i)
     report["auc@1"] = {"recorded": record["metrics"]["auc@1"]["value"],
                        "rederived": auc,
-                       "equal": auc == record["metrics"]["auc@1"]["value"]}
+                       "equal": auc == record["metrics"]["auc@1"]["value"],
+                       "pairwise": pairwise,
+                       "pairwise_equals_rank_form": pairwise == auc}
     report["definitions_present"] = all(
         "definition" in record["metrics"][m] for m in ("eer@1", "auc@1"))
     report["zero_genuine_rows_with_count_at_or_above_floor"] = [

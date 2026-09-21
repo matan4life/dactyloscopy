@@ -13,9 +13,10 @@ Nothing here is a protocol decision. The pairs are the organisers' own
 `.MFR` and `.MFA` index files, read by the digests `MAN-fvc2002.v1` records
 for them and not by name; the tools are invoked exactly as `MAN-tools.v2`
 freezes them; and the metric definitions are stated here in full, because
-no tracked file in this repository defines `eer@1` or `auc@1` - the names
-occur only in `docs/commits.md`'s illustrations - so the text below is the
-definition each number is computed under, and it travels with the number.
+no tracked file in this repository defines `eer@1` or `auc@1` - before this
+module the names occurred only in the illustrations of a `run:` commit in
+`docs/commits.md` and `REF-002` - so the text below is the definition each
+number is computed under, and it travels with the number.
 
 Imported, never invoked as a command, as `REF-013` decision 3 requires; the
 command form is `scripts/run_matching.sh`, which imports and calls.
