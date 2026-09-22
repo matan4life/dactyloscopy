@@ -567,23 +567,25 @@ still reports a match.
     ============================= test session starts ==============================
     platform linux -- Python 3.12.14, pytest-9.1.1, pluggy-1.6.0
     rootdir: /work
-    collected 96 items
+    collected 99 items
 
     tests/test_angle_statistics.py .......                                   [  7%]
     tests/test_corpus.py .......                                             [ 14%]
-    tests/test_iso_extract.py ......................                         [ 37%]
-    tests/test_iso_xyt.py ..........                                         [ 47%]
+    tests/test_corpus_inventory.py ...                                       [ 17%]
+    tests/test_iso_extract.py ......................                         [ 39%]
+    tests/test_iso_xyt.py ..........                                         [ 49%]
     tests/test_manifest_verify.py .................................          [ 82%]
     tests/test_matching.py .............                                     [ 95%]
     tests/test_pool.py ....                                                  [100%]
 
-    ============================== 96 passed in 2.20s ==============================
+    ============================== 99 passed in 2.19s ==============================
 
 Re-captured on 2026-09-22. The 7 tests in `tests/test_angle_statistics.py`
 hold the statistics over `INV-012`'s rows to their conventions; the 7 in
 `tests/test_corpus.py` hold a subset's resolution from its manifest id to
-the checksum list the manifest digests; the 22 in `tests/test_iso_extract.py`
-are this page's; the 10 in
+the checksum list the manifest digests; the 3 in
+`tests/test_corpus_inventory.py` hold the corpus inventory on files the test
+writes; the 22 in `tests/test_iso_extract.py` are this page's; the 10 in
 `tests/test_iso_xyt.py` hold the ISO-to-`.xyt` conversion `INV-018` runs to
 the facts it implements; the 33 in `tests/test_manifest_verify.py` are
 `docs/manifests.md`'s; the 13 in `tests/test_matching.py` hold the two

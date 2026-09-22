@@ -10,9 +10,10 @@ holds a directory to that list, so that an instrument given the directory
 can be shown to have read the subset and not a directory that merely has
 its name.
 
-Two callers: `matching.resolve()`, which adds the comparison lists and the
-tools to what this returns; and the command form of every instrument that
-takes a subset, which verifies the images before the instrument reads one.
+Three callers: `matching.resolve()`, which adds the comparison lists and the
+tools to what this returns; the command form of every instrument that takes
+a subset, which verifies the images before the instrument reads one; and
+`corpus_inventory`, which measures every subset the manifest lists.
 `REF-014` decision 7 is implemented in `read_field()`: a field whose status
 is CONFLICT is never read.
 """
@@ -45,6 +46,13 @@ def sha256_of(path):
         for chunk in iter(lambda: fp.read(1 << 20), b""):
             h.update(chunk)
     return h.hexdigest()
+
+
+def subset_ids(repo_root):
+    """Every subset id `MAN-fvc2002.v1` lists, in the manifest's order."""
+    mpath = os.path.join(repo_root, "manifests", "MAN-fvc2002.v1.json")
+    with open(mpath, encoding="utf-8") as fp:
+        return list(json.load(fp)["subsets"])
 
 
 def subset(repo_root, subset_id):
