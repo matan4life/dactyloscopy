@@ -56,6 +56,11 @@ that records it.
   second table of its F-6 are made by `coordinate_frames_fixture.py`; the
   table comes back row for row, the swap test in every respect but the
   count under the correct call, whose placement the record had not stated.
+- The third item of issue #10: the corpus is measured by an instrument in
+  the tree, `implementation/library/corpus_inventory.py` with
+  `scripts/measure_corpus.py`, over the root and every subset
+  `MAN-fvc2002.v1` names; every count, size, digest, line and tag of
+  `INV-005` F-1 to F-3 and F-6 to F-10 comes back. The suite is 99.
 
 ## 2026-09-21
 
