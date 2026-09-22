@@ -217,9 +217,11 @@ is verified by running the copy's own file:
 Run on 2026-09-22 against the same three defects planted in the manifests as
 they are now, it printed `21 checked, 3 of them failing`, `322 not checked
 here, 1 of those refused for their status` and `FAIL: 4 checks did not pass`,
-and exited 1: the mindtct binary digest now also fails the identity composed
-from it, `tools.mindtct.identity.composed_sha256`, a check the verifier did
-not make when the account above was written.
+and exited 1. The fourth line is `tools.mindtct.identity.composed_sha256`,
+the identity composed over the binary digest that was tampered: today's
+verifier recomputes it from the parts beside it and finds the recorded value
+no longer matches. Why the account above lists three lines and not four was
+not traced; the copies it was run against were not kept.
 
 Note where the third one is counted. Two of the three are failures of a check,
 so the run says "21 checked, 2 of them failing"; the refusal is not a check and
