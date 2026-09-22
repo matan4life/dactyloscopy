@@ -1,19 +1,20 @@
 """What the conversion's choices do to the number: the checks of
 `quality/INV-018`.
 
-`iso_xyt.to_xyt` takes three named parameters - the half turn applied to
-the ISO angle, whether the angle is snapped to `mindtct`'s 32-value grid,
-and whether the quality byte is kept - and the matching run records the
-values it used. This module runs the same subset under every reading of
-each parameter and returns the metrics side by side, so that the reading
-the run took is a measured choice and the cost of each alternative is a
-number in the record rather than an argument in the prose.
+`iso_xyt.to_xyt` takes four named parameters - the half turn applied to
+the ISO angle, the angle's sense, whether the angle is snapped to
+`mindtct`'s 32-value grid, and whether the quality byte is kept - and the
+matching run records the values it used. This module runs the same subset
+under the run's reading and five others, one or two parameters changed at a
+time, and returns the metrics side by side, so that the reading the run took
+is a measured choice and the cost of each alternative is a number in the
+record rather than an argument in the prose.
 
-It also measures two properties of `bozorth3` the conversion leans on: that
-an integer angle off `mindtct`'s grid is accepted and used, and that the
-quality column does not enter the score below the minutia cap; and one of
-`iso-extract`: how many templates exceed the cap of 150 that `MAN-tools.v2`
-records, and which minutiae `bozorth3` keeps when one does.
+It also measures three properties of `bozorth3` the conversion leans on, on
+a synthetic pair with no fingerprint in it: that an integer angle off
+`mindtct`'s grid is accepted and used, that the quality column does not
+enter the score below the minutia cap, and which minutiae survive above the
+cap of 150 that `MAN-tools.v2` records.
 
 Imported, never invoked as a command; the command form is
 `scripts/measure_conversion.sh`. Nothing per-minutia leaves `measure()`.
@@ -36,7 +37,8 @@ READINGS = [
 
 def sweep(repo_root, subset_id, work=None):
     """The subset under every reading; returns one entry per reading. Each
-    reading is the run's own conversion with one parameter changed."""
+    reading is the run's own conversion with one parameter changed, or two
+    for "mirrored, no turn"."""
     out = []
     for name, params in READINGS:
         run = matching.measure(repo_root, subset_id, work,
