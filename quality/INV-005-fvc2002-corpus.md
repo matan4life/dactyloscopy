@@ -347,6 +347,24 @@ gives it.
 
 ## Reproducing this
 
+**The instrument is in the tree since 2026-09-22.** The pass that F-2 to F-10
+describe below, made on 2026-09-06 by code that was not kept, is
+`implementation/library/corpus_inventory.py` in the commit `code: measure the
+corpus by an instrument in the tree`, with `scripts/measure_corpus.py` as its
+command form; it reads the corpus root and every subset from `MAN-fvc2002.v1`,
+and writes what it measures to `$LABDATA/derived/inv005/inventory.json`. Run
+from the tree at `385ef9d` on 2026-09-22, in 14 seconds: F-1's 3528 files, 452
+143 653 bytes and 451 890 560 image bytes; F-2's table row for row; F-3's one
+size, one mode and one file size per subset, as tabled; F-6's one pair,
+`81_5.tif` and `81_7.tif` in `DB1_A`, 3519 distinct digests and no pair across
+subsets; F-7's bytes, lines, CRLF on every line, two fields on every line and
+the distinct names of each index file; F-8's pair on one line of `index_a.MFR`
+and on none of the other three; F-9's five tags in every file of every subset
+as tabled; F-10's ranges. The digests it measures are, subset by subset, the
+lists of F-5, and the four index files digest to what F-4 and the manifest
+record. F-4's digests taken on the source before the copy, and F-11, are not
+this instrument's; F-11 is `scripts/check_tools.sh` as before.
+
 The copy, from a Windows shell:
 
     robocopy "<source>\FVC2002" "%LABDATA%\raw\fvc2002" /E /COPY:DAT /R:2 /W:2 /XJ
