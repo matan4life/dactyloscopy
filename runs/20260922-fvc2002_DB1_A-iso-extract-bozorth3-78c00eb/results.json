@@ -1,0 +1,210 @@
+{
+ "code": {
+  "branch": {
+   "status": "VERIFIED",
+   "value": "main"
+  },
+  "dirty": {
+   "note": "from RUN_TREE_DIRTY='0' on the host",
+   "status": "VERIFIED",
+   "value": false
+  },
+  "image_id": {
+   "status": "VERIFIED",
+   "value": "sha256:e0ded5a5dcc8f594df58ab904be76605ad26492da834130592091b1348f7c3fc"
+  },
+  "modules": {
+   "note": "sha256 of each module as it ran, which pins the code even when the revision is missing",
+   "status": "VERIFIED",
+   "value": {
+    "implementation/library/matching.py": "f1d3393ea9ec5797126d4b061f0f2cbdfbb94a64fa762b1536551251c67cd903",
+    "implementation/library/run_record.py": "b7df9f700cafa1d9f1bff0074393c7d139e539a5806446a6a13fa2820c2a47dc"
+   }
+  },
+  "revision": {
+   "status": "VERIFIED",
+   "value": "78c00eb81261cbca3016d72ee294fb2a7ac2e040"
+  }
+ },
+ "conversion": {
+  "module": "implementation/library/iso_xyt.py",
+  "quality": "keep",
+  "quantise": null,
+  "sense": 1,
+  "turn_deg": 180
+ },
+ "dataset": {
+  "every_image_verified_against_the_list": true,
+  "id": "fvc2002/DB1_A",
+  "images_used": 800,
+  "manifest": {
+   "path": "manifests/MAN-fvc2002.v1.json",
+   "sha256": "31569c90864866a97e1ddc4b835c21848f40e65963330ea08c33ddae86fe186b"
+  },
+  "set": {
+   "checksum_list": "manifests/checksums/fvc2002/DB1_A.sha256",
+   "entries": 800,
+   "sha256": "11e365c8af1daee531cdc5619b421517562ab8588a400cad1c099fd13acca7d2"
+  }
+ },
+ "eer_readings": {
+  ">, observed only, largest": {
+   "eer": 0.02584776334776335,
+   "fmr": 0.02383838383838384,
+   "fnmr": 0.027857142857142858,
+   "n_tied": 1,
+   "threshold": 16
+  },
+  ">, observed only, smallest": {
+   "eer": 0.02584776334776335,
+   "fmr": 0.02383838383838384,
+   "fnmr": 0.027857142857142858,
+   "n_tied": 1,
+   "threshold": 16
+  },
+  ">, with reject-all, largest": {
+   "eer": 0.02584776334776335,
+   "fmr": 0.02383838383838384,
+   "fnmr": 0.027857142857142858,
+   "n_tied": 1,
+   "threshold": 16
+  },
+  ">, with reject-all, smallest": {
+   "eer": 0.02584776334776335,
+   "fmr": 0.02383838383838384,
+   "fnmr": 0.027857142857142858,
+   "n_tied": 1,
+   "threshold": 16
+  },
+  ">=, observed only, largest": {
+   "eer": 0.02584776334776335,
+   "fmr": 0.02383838383838384,
+   "fnmr": 0.027857142857142858,
+   "n_tied": 1,
+   "threshold": 17
+  },
+  ">=, observed only, smallest": {
+   "eer": 0.02584776334776335,
+   "fmr": 0.02383838383838384,
+   "fnmr": 0.027857142857142858,
+   "n_tied": 1,
+   "threshold": 17
+  },
+  ">=, with reject-all, largest": {
+   "eer": 0.02584776334776335,
+   "fmr": 0.02383838383838384,
+   "fnmr": 0.027857142857142858,
+   "n_tied": 1,
+   "threshold": 17
+  },
+  ">=, with reject-all, smallest": {
+   "eer": 0.02584776334776335,
+   "fmr": 0.02383838383838384,
+   "fnmr": 0.027857142857142858,
+   "n_tied": 1,
+   "threshold": 17
+  }
+ },
+ "eer_readings_note": "Every reading an equal-error rate admits, side by side; the value under metrics is the reading its definition text names.",
+ "extractor": "iso-extract",
+ "manifests_verified_before_run": {
+  "MAN-fvc2002.v1.json": {
+   "checked": 16,
+   "failed": 0,
+   "refused": 0,
+   "total": 124
+  },
+  "MAN-metrics.v1.json": {
+   "checked": 0,
+   "failed": 0,
+   "refused": 0,
+   "total": 11
+  },
+  "MAN-tools.v2.json": {
+   "checked": 15,
+   "failed": 0,
+   "refused": 0,
+   "total": 137
+  }
+ },
+ "matcher": "bozorth3",
+ "metrics": {
+  "auc@1": {
+   "definition": "Exact Mann-Whitney U with average ranks for ties: every genuine and impostor score is ranked together, tied scores sharing the mean of the ranks they span, U = R_genuine - n_genuine (n_genuine + 1) / 2, and AUC = U / (n_genuine n_impostor). Equal to the probability that a genuine score exceeds an impostor score, counting a tie as one half. Stored as a fraction.",
+   "id": "auc@1",
+   "value": 0.9891118326118327,
+   "version": 1
+  },
+  "eer@1": {
+   "at": {
+    "fmr": 0.02383838383838384,
+    "fnmr": 0.027857142857142858,
+    "threshold": 17
+   },
+   "definition": "Threshold sweep over the distinct scores observed, and one threshold above the largest, with a pair accepted when its score is at least the threshold. FMR(t) is the fraction of impostor pairs accepted and FNMR(t) the fraction of genuine pairs rejected. The operating threshold is the one that minimises |FMR(t) - FNMR(t)|; on a tie the smallest threshold is taken. EER = (FMR(t) + FNMR(t)) / 2 at that threshold, stored as a fraction.",
+   "id": "eer@1",
+   "value": 0.02584776334776335,
+   "version": 1
+  }
+ },
+ "metrics_manifest": {
+  "path": "manifests/MAN-metrics.v1.json",
+  "sha256": "297a70631d131410590e84056c0bed944d369eacddaa0686a04d17f6bd4efbb4"
+ },
+ "n_genuine": 2800,
+ "n_images": 800,
+ "n_impostor": 4950,
+ "observation": {
+  "bytes": 473747,
+  "path": "observation.json",
+  "sha256": "7e7d84f02efabecfc4b27bab8918dfb05cc87a30c3a5e56189c30ba2e1ab2136"
+ },
+ "protocol": {
+  "genuine": {
+   "name": "index_a.MFR",
+   "sha256": "cbcbd83d5b121e48b44bd3201a92f18b7adcb085c7530bdf7c8b253f1a1105f6",
+   "status": "VERIFIED"
+  },
+  "id": null,
+  "impostor": {
+   "name": "index_a.MFA",
+   "sha256": "a90b5c6a1d731bf013aa9284c237f9c409be2b2e67dcff15c0c538f7a9724c1b",
+   "status": "VERIFIED"
+  },
+  "note": "No protocol manifest exists; MAN-fvc2002.v1 records the organisers' index files by digest and says the protocol they define is not its subject. The pairs are those files, in their order, nothing added or removed."
+ },
+ "record": {
+  "created": "2026-09-22",
+  "kind": "run",
+  "provisional": false,
+  "provisional_note": "True when the code revision or the dirty flag is unverified, or the tree was dirty. A provisional run cannot support a claim.",
+  "schema": "INV-017 candidate 1"
+ },
+ "seed": {
+  "note": "No random number is drawn anywhere in this run.",
+  "value": null
+ },
+ "tools": {
+  "bozorth3": {
+   "binary": "/usr/local/bin/bozorth3",
+   "command": "bozorth3 <probe.xyt> <gallery.xyt>",
+   "flags": [],
+   "sha256_manifest": "24fb809830f6a940dc27290b700b1d8e581a1f5c2c6bb9a97a856f96e8cdb287",
+   "sha256_measured": "24fb809830f6a940dc27290b700b1d8e581a1f5c2c6bb9a97a856f96e8cdb287"
+  },
+  "iso-extract": {
+   "binary": "/usr/local/bin/iso-extract",
+   "command": "iso-extract <image.pgm> <template.ist>",
+   "flags": [],
+   "library": "/usr/local/lib/libFJFX.so",
+   "library_sha256_manifest": "ba453c674a82f4e9dd74985a4840285a07e5681defcde790d32473a7f4de1bf1",
+   "library_sha256_measured": "ba453c674a82f4e9dd74985a4840285a07e5681defcde790d32473a7f4de1bf1",
+   "sha256_manifest": "b198f4f9d7709f54d235f82805638d271d809978602029982e046b2262038c1a",
+   "sha256_measured": "b198f4f9d7709f54d235f82805638d271d809978602029982e046b2262038c1a"
+  }
+ },
+ "tools_manifest": {
+  "path": "manifests/MAN-tools.v2.json",
+  "sha256": "21c8f2a9476c82cb1eb6dbbf44b61fb3a0355a0119bfa56958ed66ba24c87cf6"
+ }
+}
