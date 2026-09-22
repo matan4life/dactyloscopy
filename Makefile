@@ -77,7 +77,13 @@ test: ## Run pytest in the container; needs no data
 # visible, because a skipped check reported as a pass is the failure the whole
 # mechanism exists to remove.
 verify: ## Verify every manifest against what it names; LABDATA adds the corpus
-	@if [ -n "$(LABDATA)" ]; then 	  $(DOCKER) run --rm $(REPO_MOUNT) -v "$(LABDATA_HOST)/raw:/data/raw:ro" 	    -w /work -e LABDATA=/data "$(IMAGE)" bash scripts/verify_manifests.sh; 	else 	  $(DOCKER) run --rm $(REPO_MOUNT) -w /work "$(IMAGE)" 	    bash scripts/verify_manifests.sh; 	fi
+	@if [ -n "$(LABDATA)" ]; then \
+	  $(DOCKER) run --rm $(REPO_MOUNT) -v "$(LABDATA_HOST)/raw:/data/raw:ro" \
+	    -w /work -e LABDATA=/data "$(IMAGE)" bash scripts/verify_manifests.sh; \
+	else \
+	  $(DOCKER) run --rm $(REPO_MOUNT) -w /work "$(IMAGE)" \
+	    bash scripts/verify_manifests.sh; \
+	fi
 
 check-tools: ## Verify the tools in the image against manifests/MAN-tools.v2.json
 	@if [ -z "$(FVC_DB1_B)" ]; then \
@@ -104,12 +110,31 @@ RUN_CODE_REVISION := $(shell git rev-parse HEAD 2>/dev/null)
 RUN_TREE_DIRTY := $(shell git status --porcelain 2>/dev/null | wc -l | tr -d ' ')
 RUN_BRANCH := $(shell git rev-parse --abbrev-ref HEAD 2>/dev/null)
 RUN_IMAGE_ID := $(shell $(DOCKER) image inspect --format '{{.Id}}' "$(IMAGE)" 2>/dev/null)
-PROVENANCE := -e RUN_CODE_REVISION="$(RUN_CODE_REVISION)" -e RUN_TREE_DIRTY="$(RUN_TREE_DIRTY)" -e RUN_BRANCH="$(RUN_BRANCH)" -e RUN_IMAGE_ID="$(RUN_IMAGE_ID)"
+PROVENANCE := -e RUN_CODE_REVISION="$(RUN_CODE_REVISION)" \
+  -e RUN_TREE_DIRTY="$(RUN_TREE_DIRTY)" -e RUN_BRANCH="$(RUN_BRANCH)" \
+  -e RUN_IMAGE_ID="$(RUN_IMAGE_ID)"
 
 run-matching: ## One matching run on SUBSET (a manifest id); needs LABDATA
-	@if [ -z "$(LABDATA)" ] || [ -z "$(SUBSET)" ]; then 	  echo "LABDATA and SUBSET are both required, for example:"; 	  echo ""; 	  echo "  make run-matching LABDATA=/path/to/labdata SUBSET=fvc2002/DB1_B"; 	  echo ""; 	  echo "The record and its observation are written under"; 	  echo "\$$LABDATA/derived/inv017/<subset>, outside the tree."; 	  exit 1; 	fi
-	$(DOCKER) run --rm $(REPO_MOUNT) $(DATA_MOUNTS) -w /work -e LABDATA=/data $(PROVENANCE) "$(IMAGE)" bash scripts/run_matching.sh "$(SUBSET)"
+	@if [ -z "$(LABDATA)" ] || [ -z "$(SUBSET)" ]; then \
+	  echo "LABDATA and SUBSET are both required, for example:"; \
+	  echo ""; \
+	  echo "  make run-matching LABDATA=/path/to/labdata SUBSET=fvc2002/DB1_B"; \
+	  echo ""; \
+	  echo "The record and its observation are written under"; \
+	  echo "\$$LABDATA/derived/inv017/<subset>, outside the tree."; \
+	  exit 1; \
+	fi
+	$(DOCKER) run --rm $(REPO_MOUNT) $(DATA_MOUNTS) -w /work -e LABDATA=/data \
+	  $(PROVENANCE) "$(IMAGE)" bash scripts/run_matching.sh "$(SUBSET)"
 
 reproduce-matching: ## Re-run from a record under LABDATA/derived and compare; RECORD is its subdirectory
-	@if [ -z "$(LABDATA)" ] || [ -z "$(RECORD)" ]; then 	  echo "LABDATA and RECORD are both required, for example:"; 	  echo ""; 	  echo "  make reproduce-matching LABDATA=/path/to/labdata RECORD=inv017/fvc2002_DB1_B"; 	  echo ""; 	  echo "RECORD is relative to \$$LABDATA/derived."; 	  exit 1; 	fi
-	$(DOCKER) run --rm $(REPO_MOUNT) $(DATA_MOUNTS) -w /work -e LABDATA=/data "$(IMAGE)" bash scripts/reproduce_matching.sh "/data/derived/$(RECORD)"
+	@if [ -z "$(LABDATA)" ] || [ -z "$(RECORD)" ]; then \
+	  echo "LABDATA and RECORD are both required, for example:"; \
+	  echo ""; \
+	  echo "  make reproduce-matching LABDATA=/path/to/labdata RECORD=inv017/fvc2002_DB1_B"; \
+	  echo ""; \
+	  echo "RECORD is relative to \$$LABDATA/derived."; \
+	  exit 1; \
+	fi
+	$(DOCKER) run --rm $(REPO_MOUNT) $(DATA_MOUNTS) -w /work -e LABDATA=/data \
+	  "$(IMAGE)" bash scripts/reproduce_matching.sh "/data/derived/$(RECORD)"

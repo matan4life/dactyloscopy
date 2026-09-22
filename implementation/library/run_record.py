@@ -68,6 +68,7 @@ def provenance(repo_root):
     mods = {}
     for rel in ("implementation/library/matching.py",
                 "implementation/library/run_record.py"):
+        # the two modules that ran; the manifests are named by digest elsewhere
         mods[rel] = _sha256_file(os.path.join(repo_root, rel))
     out["modules"] = {"value": mods, "status": "VERIFIED",
                       "note": "sha256 of each module as it ran, which pins "
@@ -117,6 +118,8 @@ def compose(run, repo_root, created=None):
             for tool, t in res["tools"].items()
         },
         "tools_manifest": res["tools_manifest"],
+        "metrics_manifest": run["metrics_manifest"],
+        "manifests_verified_before_run": run["manifests_verified"],
         "code": prov,
         "seed": {"value": run["seed"], "note": run["seed_note"]},
         "n_genuine": run["n_genuine"],
@@ -185,6 +188,9 @@ def rederive(record_dir):
                        "pairwise_equals_rank_form": pairwise == auc}
     report["definitions_present"] = all(
         "definition" in record["metrics"][m] for m in ("eer@1", "auc@1"))
+    report["metric_ids"] = {m: "%s@%s" % (record["metrics"][m]["id"].split("@")[0],
+                                          record["metrics"][m]["version"])
+                            for m in ("eer@1", "auc@1")}
     report["zero_genuine_rows_with_count_at_or_above_floor"] = [
         k for k, row in enumerate(obs["pairs"])
         if row[2] == "genuine" and row[3] == 0

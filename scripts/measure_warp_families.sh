@@ -3,7 +3,9 @@
 # aggregate as JSON and print the tables quality/INV-015 carries. Run inside
 # the container, with the corpus mounted read-only.
 #
-#   docker run --rm -v "<repo>:/work" -v "$LABDATA/raw:/data/raw:ro" \n#     -w /work dactyloscopy:dev bash scripts/measure_warp_families.sh \n#     /data/raw/fvc2002/Dbs/Db1_b DB1_B out.json
+#   docker run --rm -v "<repo>:/work" -v "$LABDATA/raw:/data/raw:ro" \
+#     -w /work dactyloscopy:dev bash scripts/measure_warp_families.sh \
+#     /data/raw/fvc2002/Dbs/Db1_b DB1_B out.json
 #
 # This script produces no number of its own. It is the command form of
 # implementation/library/warp_families.py, with

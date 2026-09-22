@@ -4,7 +4,6 @@ The ridge period is a parameter of the construction and not an incidental, so
 the sweep is repeated at 7, 9, 11 and 13 pixels. Imported, never invoked as a
 command; the command form is `scripts/measure_angle_conventions.sh`.
 """
-import json
 import math
 import os
 import subprocess
@@ -24,10 +23,6 @@ def frame(phi_deg):
 
 def wrap(a):
     return (a + math.pi) % (2.0 * math.pi) - math.pi
-
-
-def wrap180(a):
-    return (a + 180.0) % 360.0 - 180.0
 
 
 def place(target, period):

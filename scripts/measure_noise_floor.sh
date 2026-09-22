@@ -4,7 +4,8 @@
 #
 #   docker run --rm -v "<repo>:/work" -v "$LABDATA/raw:/data/raw:ro" \
 #     -w /work dactyloscopy:dev \
-#     bash scripts/measure_noise_floor.sh \n#       /data/raw/fvc2002/Dbs/Db1_b DB1_B out.json
+#     bash scripts/measure_noise_floor.sh \
+#       /data/raw/fvc2002/Dbs/Db1_b DB1_B out.json
 #
 # This script produces no number of its own. It is the command form of
 # implementation/library/noise_floor.py, which is where the mechanism lives;

@@ -10,13 +10,14 @@ corpus into a score vector and two metrics, and returns them with every
 input that went into them.
 
 Nothing here is a protocol decision. The pairs are the organisers' own
-`.MFR` and `.MFA` index files, read by the digests `MAN-fvc2002.v1` records
-for them and not by name; the tools are invoked exactly as `MAN-tools.v2`
-freezes them; and the metric definitions are stated here in full, because
-no tracked file in this repository defines `eer@1` or `auc@1` - before this
-module the names occurred only in the illustrations of a `run:` commit in
-`docs/commits.md` and `REF-002` - so the text below is the definition each
-number is computed under, and it travels with the number.
+`.MFR` and `.MFA` index files, found under the distribution's `Dbs` directory
+and each verified against the digest `MAN-fvc2002.v1` records for it before
+a line is read; the tools are invoked exactly as `MAN-tools.v2`
+freezes them; and the metric definitions are the ones `MAN-metrics.v1`
+registers, by id and version, read from the manifest at run time and
+compared with the text this module implements - a difference stops the run,
+so the code and the registration cannot drift apart silently. The text
+travels with the number.
 
 Imported, never invoked as a command, as `REF-013` decision 3 requires; the
 command form is `scripts/run_matching.sh`, which imports and calls.
@@ -35,13 +36,17 @@ import subprocess
 import numpy as np
 from PIL import Image
 
+from implementation.library import manifest_verify
+
 WORK = os.environ.get("INV017_WORK", "/tmp/inv017")
 
-# The two metrics, defined in full. No tracked file defines either, so this
-# text is the definition; the code below is that text, and a reader who wants
-# to check the number against the definition reads both. Where an equal-error
-# rate can be read more than one way, the choice is stated here rather than
-# made silently, and INV-017 reports whether each choice moves the number.
+# The two metrics this module implements, as text. MAN-metrics.v1 registers
+# each by id and version with the same text; metric_definitions() reads the
+# manifest and refuses to proceed if the registered text is not this text, so
+# the code below is the definition a reader can check the number against.
+# Where an equal-error rate can be read more than one way, the choice is
+# stated in the text rather than made silently, and INV-017 F-4 reports
+# whether each choice moves the number.
 METRICS = {
     "eer@1": (
         "Threshold sweep over the distinct scores observed, and one threshold "
@@ -86,6 +91,55 @@ def _sha256(path):
         for chunk in iter(lambda: fp.read(1 << 20), b""):
             h.update(chunk)
     return h.hexdigest()
+
+
+def verify_manifests_first(repo_root, corpus_root):
+    """`REF-014` decision 5: a run that produces numbers verifies its
+    dataset and tool manifests first, and does not start if verification
+    fails. The metrics manifest is verified with them. Returns the summary
+    per manifest; raises on any failed or refused check."""
+    report = {}
+    for name in ("MAN-fvc2002.v1.json", "MAN-tools.v2.json",
+                 "MAN-metrics.v1.json"):
+        path = os.path.join(repo_root, "manifests", name)
+        fields = manifest_verify.verify(path, repo_root, image_root="/",
+                                        corpus_root=corpus_root)
+        summary = manifest_verify.summarise(fields)
+        report[name] = {k: summary[k] for k in
+                        ("total", "checked", "failed", "refused")}
+        if summary["failed"] or summary["refused"]:
+            bad = [f.path for f in fields if f.refused or
+                   (f.checked and not f.ok)]
+            raise ValueError("%s: %d failed, %d refused: %s" % (
+                name, summary["failed"], summary["refused"], bad[:5]))
+    return report
+
+
+def metric_definitions(repo_root):
+    """The registered metrics, from MAN-metrics.v1, checked against the text
+    this module implements.
+
+    A run record names its metrics by id and version and copies the
+    registered definition beside each value. The registration is the
+    manifest's; the implementation is this module's; and the only way to
+    know they agree is to compare the text, which happens here on every run.
+    A manifest whose text differs from METRICS is a manifest this module does
+    not implement, and the run stops rather than compute one thing under the
+    name of another."""
+    mpath = os.path.join(repo_root, "manifests", "MAN-metrics.v1.json")
+    with open(mpath, encoding="utf-8") as fp:
+        man = json.load(fp)
+    out = {}
+    for name, text in METRICS.items():
+        registered, _ = _read(man, "metrics", name, "definition")
+        if registered != text:
+            raise ValueError("MAN-metrics.v1 registers %s with a definition "
+                             "this module does not implement" % name)
+        mid, _ = _read(man, "metrics", name, "id")
+        ver, _ = _read(man, "metrics", name, "version")
+        out[name] = {"id": mid, "version": ver, "definition": registered}
+    return {"path": "manifests/MAN-metrics.v1.json", "sha256": _sha256(mpath),
+            "metrics": out}
 
 
 def resolve(repo_root, subset_id):
@@ -371,6 +425,12 @@ def measure(repo_root, subset_id, work=None):
         WORK = work
     os.makedirs(WORK, exist_ok=True)
     res = resolve(repo_root, subset_id)
+    verified = verify_manifests_first(
+        repo_root, os.path.dirname(os.path.dirname(res["subset_dir"])))
+    print("  manifests verified: %s" % ", ".join(
+        "%s %d/%d" % (k.replace(".json", ""), v["checked"], v["total"])
+        for k, v in verified.items()), flush=True)
+    metrics = metric_definitions(repo_root)
     digests = check_binaries(res["tools"])
 
     genuine = read_index(res["index"]["MFR"]["path"])
@@ -419,6 +479,7 @@ def measure(repo_root, subset_id, work=None):
              + [[a, b, "impostor", s] for (a, b), s in zip(impostor, i_scores)])
     return {
         "resolution": {k: v for k, v in res.items() if k != "subset_dir"},
+        "manifests_verified": verified,
         "binaries_measured": digests,
         "observation": {
             "pairs": pairs,
@@ -437,10 +498,11 @@ def measure(repo_root, subset_id, work=None):
                      "overflow_sentinel_rows lists rows whose score is the "
                      "4000 the tool returns on overflow."),
         },
+        "metrics_manifest": {"path": metrics["path"],
+                             "sha256": metrics["sha256"]},
         "metrics": {
-            "eer@1": {"value": eer, "definition": METRICS["eer@1"],
-                      "at": at},
-            "auc@1": {"value": auc, "definition": METRICS["auc@1"]},
+            "eer@1": dict(metrics["metrics"]["eer@1"], value=eer, at=at),
+            "auc@1": dict(metrics["metrics"]["auc@1"], value=auc),
         },
         "eer_readings": eer_variants(g_scores, i_scores),
         "n_genuine": len(genuine), "n_impostor": len(impostor),

@@ -447,14 +447,6 @@ def ransac_score(A, B, sample):
     return (R, t), int((dd.min(1) <= RANSAC_INLIER).sum())
 
 
-def ransac(A, B):
-    """Translation and rotation only, by RANSAC over position pairs."""
-    sample = ransac_sample(A, B)
-    if sample is None:
-        return None, 0
-    return ransac_score(A, B, sample)
-
-
 def mutual_pairs(A2, B, tau):
     if not len(A2) or not len(B):
         return np.zeros((0, 2), dtype=int)

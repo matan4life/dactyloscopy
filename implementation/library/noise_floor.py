@@ -336,7 +336,6 @@ def measure(src_dir, tag):
     names = sorted(f for f in os.listdir(src_dir) if f.lower().endswith(".tif"))
     print("%s: %d images" % (tag, len(names)), flush=True)
 
-    rng = np.random.default_rng(SEED)
 
     for k, res in enumerate(_pool([(i, os.path.join(src_dir, f))
                                    for i, f in enumerate(names)],

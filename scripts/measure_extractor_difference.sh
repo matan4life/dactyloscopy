@@ -4,7 +4,8 @@
 #
 #   docker run --rm -v "<repo>:/work" -v "$LABDATA/raw:/data/raw:ro" \
 #     -w /work dactyloscopy:dev \
-#     bash scripts/measure_extractor_difference.sh \n#       /data/raw/fvc2002/Dbs/Db1_b DB1_B out.json
+#     bash scripts/measure_extractor_difference.sh \
+#       /data/raw/fvc2002/Dbs/Db1_b DB1_B out.json
 #
 # This script produces no number of its own. It is the command form of
 # implementation/library/extractor_difference.py, which is where the

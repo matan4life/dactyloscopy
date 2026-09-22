@@ -3,7 +3,8 @@
 # the rows as JSON, then print the period check. Run inside the container; no
 # corpus image is needed.
 #
-#   docker run --rm -v "<repo>:/work" -w /work dactyloscopy:dev \n#     bash scripts/measure_angle_conventions.sh out.json
+#   docker run --rm -v "<repo>:/work" -w /work dactyloscopy:dev \
+#     bash scripts/measure_angle_conventions.sh out.json
 #
 # This script produces no number of its own. It is the command form of
 # implementation/library/angle_conventions.py and

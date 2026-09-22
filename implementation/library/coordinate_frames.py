@@ -9,7 +9,6 @@ command form is `scripts/measure_coordinate_frames.sh`, which imports and
 calls. `measure()` returns one row per case and prints the same.
 """
 import ctypes
-import hashlib
 import math
 import os
 import subprocess

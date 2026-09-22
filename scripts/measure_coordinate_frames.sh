@@ -3,7 +3,8 @@
 # lines quality/INV-011 was written from. Run inside the container, with the
 # three fixture images mounted read-only.
 #
-#   docker run --rm -v "<repo>:/work" -v "<fixture>:/fixture:ro" \n#     -w /work dactyloscopy:dev bash scripts/measure_coordinate_frames.sh /fixture
+#   docker run --rm -v "<repo>:/work" -v "<fixture>:/fixture:ro" \
+#     -w /work dactyloscopy:dev bash scripts/measure_coordinate_frames.sh /fixture
 #
 # This script produces no number of its own. It is the command form of
 # implementation/library/coordinate_frames.py and
