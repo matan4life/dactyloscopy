@@ -2,9 +2,13 @@
 
 One synthetic image gives the worked example of F-1 and F-2; the three fixture
 images `MAN-tools.v2` names give the declared image size of F-4 and the ranges
-of F-5; and F-6 varies the declared resolution by calling the library directly,
-which is an instrument of the investigation and not the invocation `REF-012`
-adopted.
+of F-5; F-4's argument-swap test calls the library with height and width
+exchanged on a synthetic field; and F-6 varies the declared resolution by
+calling the library directly, which is an instrument of the investigation and
+not the invocation `REF-012` adopted. The swap test and F-6's second table
+were made by code that was not kept when the record was written, and since
+2026-09-22 are made here: the swap test's singular points, which the record
+did not state, are the ones written below.
 
 Imported, never invoked as a command; the command form is
 `scripts/measure_coordinate_frames.py`. Only ranges and counts leave this
@@ -183,6 +187,27 @@ def measure(fixture_dir, repo_dir):
     emit("   over the three: mindtct x %s y %s | iso-extract x %s y %s"
           % (span(allx_m), span(ally_m), span(allx_i), span(ally_i)))
 
+    # ------------------------------------------------- F-4, the swap test
+    emit()
+    emit("== F-4, height and width exchanged in the call, on a synthetic")
+    emit("   field 320 wide and 256 high, nothing blanked")
+    sw, sh = 320, 256
+    core, delta = (160, 68), (160, 188)
+    emit("   core %s, delta %s" % (core, delta))
+    field = ridge_field(sw, sh, core, delta)
+    for tag, height, width in (("as the header declares", sh, sw),
+                               ("with the two swapped", sw, sh)):
+        rc, t = iso_raw(field, 500, width=width, height=height)
+        if rc:
+            emit("   %-24s (height=%d, width=%d): rc=%d"
+                  % (tag, height, width, rc))
+        else:
+            dd = decode(t)
+            emit("   %-24s (height=%d, width=%d): rc=%d  image_x=%d "
+                  "image_y=%d count=%d" % (tag, height, width, rc,
+                                           dd["image_x"], dd["image_y"],
+                                           dd["count"]))
+
     # --------------------------------------------------------------------- F-6
     emit()
     emit("== F-6, the declared resolution varied. An instrument, not the")
@@ -202,4 +227,28 @@ def measure(fixture_dir, repo_dir):
               % (dpi, rc, dd["count"], dd["res_x"], dd["res_y"],
                  span([m[0] for m in dd["minutiae"]]),
                  span([m[1] for m in dd["minutiae"]])))
+
+    # ------------------------------------------- F-6, the sets compared
+    emit()
+    emit("== F-6, the same question asked sharply: the sorted first four")
+    emit("   (x, y) at each declared value, against the 500 set")
+    sets = {}
+    for dpi in (450, 475, 499, 500, 501, 525, 550):
+        rc, t = iso_raw(base, dpi)
+        dd = decode(t) if not rc else None
+        sets[dpi] = (rc, dd["res_x"] if dd else None,
+                     sorted((m[0], m[1]) for m in dd["minutiae"]) if dd
+                     else None)
+    emit("   dpi   header res  count  first four (x, y)"
+         "                       identical to the 500 set")
+    for dpi in (450, 475, 499, 500, 501, 525, 550):
+        rc, res, pts = sets[dpi]
+        if pts is None:
+            emit("   %-5d library returned %d" % (dpi, rc))
+            continue
+        same = "-" if dpi == 500 else (
+            "yes" if pts == sets[500][2] else "no")
+        emit("   %-5d %-11d %-6d %-40s %s"
+              % (dpi, res, len(pts), " ".join("(%d,%d)" % p for p in pts[:4]),
+                 same))
     return out
