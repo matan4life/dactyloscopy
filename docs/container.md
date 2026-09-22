@@ -165,16 +165,17 @@ showed 47 tests over two files.
     ============================= test session starts ==============================
     platform linux -- Python 3.12.14, pytest-9.1.1, pluggy-1.6.0
     rootdir: /work
-    collected 89 items
+    collected 96 items
 
-    tests/test_corpus.py .......                                             [  7%]
-    tests/test_iso_extract.py ......................                         [ 32%]
-    tests/test_iso_xyt.py ..........                                         [ 43%]
-    tests/test_manifest_verify.py .................................          [ 80%]
+    tests/test_angle_statistics.py .......                                   [  7%]
+    tests/test_corpus.py .......                                             [ 14%]
+    tests/test_iso_extract.py ......................                         [ 37%]
+    tests/test_iso_xyt.py ..........                                         [ 47%]
+    tests/test_manifest_verify.py .................................          [ 82%]
     tests/test_matching.py .............                                     [ 95%]
     tests/test_pool.py ....                                                  [100%]
 
-    ============================== 89 passed in 2.02s ==============================
+    ============================== 96 passed in 2.20s ==============================
     $ echo $?
     0
 
@@ -193,8 +194,8 @@ The probe file was deleted afterwards and is not in the tree.
 counts were re-captured on 2026-09-22: the suite was 22 tests over one file
 until `tests/test_manifest_verify.py` took it to 45, then 47 and 55 the same
 day, 2026-09-07; `tests/test_matching.py` took it to 68 on 2026-09-22 and
-`tests/test_iso_xyt.py`, `tests/test_pool.py` and `tests/test_corpus.py` to
-89 the same day. What
+`tests/test_iso_xyt.py`, `tests/test_pool.py`, `tests/test_corpus.py` and
+`tests/test_angle_statistics.py` to 96 the same day. What
 the suite checks is `docs/tools.md`'s, `docs/manifests.md`'s and
 `MAN-metrics.v1`'s subject, not this page's.
 
