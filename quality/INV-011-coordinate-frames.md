@@ -477,6 +477,24 @@ instrument in the tree produces them they rest on this record's account
 alone. A paragraph written on 2026-09-09 said the module prints every number
 below; it did not, and this paragraph replaces it.
 
+**F-4's swap test and F-6's second table are in the tree since 2026-09-22.**
+In the commit `code: make INV-011's swap test and F-6's second table in the
+tree`, `implementation/library/coordinate_frames_fixture.py` makes both, after
+the sections they belong to, and the paragraph above that says two
+measurements were made by code not in the tree is replaced by this one. Run
+from the tree at `0740689` on 2026-09-22: F-6's second table comes back row
+for row - the header resolution, the sorted first four coordinates and the
+comparison with the 500 set at each of the seven declared values are as
+printed above. F-4's swap test comes back in every respect but one. Its field
+is 320 wide and 256 high with nothing blanked, as F-4 says, and its two
+singular points, which this record did not state, are the instrument's own,
+core (160, 68) and delta (160, 188); called as the header declares it returns
+0 with `image_x` 320, `image_y` 256 and 10 minutiae, and with the two swapped
+it returns 0 with `image_x` 256, `image_y` 320 and 255 minutiae. The 255, the
+return codes and the transposed header are the record's; the record's 6 was
+found at a placement that was not written down, and the instrument's 10 is
+what its own placement gives. F-4's lines stand as written.
+
 **The command form is `scripts/measure_coordinate_frames.py` since
 2026-09-22**, a Python file with the same argument in place of the shell
 script of that name, in the commit `code: write every command form in Python`.
