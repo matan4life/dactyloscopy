@@ -52,6 +52,10 @@ that records it.
   over the rows the sweep returns, printed as the record's own tables; the
   record says which one value differs in the third decimal and why. The
   suite is 96.
+- The second item of issue #10: `INV-011`'s argument-swap test and the
+  second table of its F-6 are made by `coordinate_frames_fixture.py`; the
+  table comes back row for row, the swap test in every respect but the
+  count under the correct call, whose placement the record had not stated.
 
 ## 2026-09-21
 
