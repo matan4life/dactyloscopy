@@ -38,6 +38,15 @@ that records it.
   same Python in a heredoc, and `make record-run` places a finished record.
   Each record whose command form changed says so and that its aggregate is
   byte for byte what the shell form returned.
+- `REF-015` decision 3 carried out: every command form that reads a subset
+  takes its manifest id, finds the directory through `MAN-fvc2002.v1` by
+  the new `implementation/library/corpus.py` and verifies every image
+  against the subset's checksum list first; every aggregate a
+  `measure_*.py` writes goes under `$LABDATA/derived/<investigation>/`
+  by default, under `<subset>/` where there is one, as
+  `measure_conversion.py` already did. A run record now
+  digests every library module loaded when it was composed, not two named
+  ones. `corpus` is held by seven tests; the suite is 89.
 
 ## 2026-09-21
 
