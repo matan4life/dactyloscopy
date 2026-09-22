@@ -1,0 +1,74 @@
+{
+ "manifest": "MAN-metrics",
+ "version": 1,
+ "issued": "2026-09-21",
+ "produced_by": {
+  "refinements": [
+   "quality/REF-016-run-record-composition.md"
+  ],
+  "investigations": [
+   "quality/INV-017-run-record-composition.md"
+  ],
+  "note": "Two metrics, each registered by an id, a version and its full definition as text. The text is the definition: a run record copies it beside the value, and INV-017 F-4 measured that three readers given the text and an observation, and nothing else, return the number the instrument returns to the last double. A metric's definition is never edited; a changed definition is a new id@version in a new manifest version, and the old one stays, because old results are reproduced against it."
+ },
+ "metrics": {
+  "eer@1": {
+   "id": {
+    "value": "eer@1",
+    "status": "VERIFIED"
+   },
+   "version": {
+    "value": 1,
+    "status": "VERIFIED"
+   },
+   "definition": {
+    "value": "Threshold sweep over the distinct scores observed, and one threshold above the largest, with a pair accepted when its score is at least the threshold. FMR(t) is the fraction of impostor pairs accepted and FNMR(t) the fraction of genuine pairs rejected. The operating threshold is the one that minimises |FMR(t) - FNMR(t)|; on a tie the smallest threshold is taken. EER = (FMR(t) + FNMR(t)) / 2 at that threshold, stored as a fraction.",
+    "status": "VERIFIED",
+    "note": "INV-017 F-4: from this text alone, three readers returned 19/336 on fvc2002/DB1_B and 17887/554400 on fvc2002/DB1_A at thresholds 17 and 18, equal to the instrument. The text fixes every choice an equal-error rate leaves open - acceptance at the threshold, the reject-all threshold, the tie rule, the sweep - and INV-017 F-4 records that on those two subsets none of the alternatives it fixes moves the number, while the one it excludes, interpolating the crossing, does."
+   },
+   "operating_point": {
+    "value": "the threshold taken, with FMR and FNMR there",
+    "status": "VERIFIED",
+    "note": "Carried beside the value so that the number can be checked against the definition without a sweep."
+   },
+   "stored_as": {
+    "value": "fraction",
+    "status": "VERIFIED",
+    "note": "A proportion in [0, 1], never a percentage; a percentage exists only at display time."
+   },
+   "implementation": {
+    "value": "implementation/library/matching.py, eer_at_1",
+    "status": "VERIFIED",
+    "note": "The code refuses to run against a manifest whose definition text differs from the one it implements, so the two cannot drift apart silently."
+   }
+  },
+  "auc@1": {
+   "id": {
+    "value": "auc@1",
+    "status": "VERIFIED"
+   },
+   "version": {
+    "value": 1,
+    "status": "VERIFIED"
+   },
+   "definition": {
+    "value": "Exact Mann-Whitney U with average ranks for ties: every genuine and impostor score is ranked together, tied scores sharing the mean of the ranks they span, U = R_genuine - n_genuine (n_genuine + 1) / 2, and AUC = U / (n_genuine n_impostor). Equal to the probability that a genuine score exceeds an impostor score, counting a tie as one half. Stored as a fraction.",
+    "status": "VERIFIED",
+    "note": "INV-017 F-4: from this text alone, three readers returned 1359/1400 on fvc2002/DB1_B and 5473093/5544000 on fvc2002/DB1_A, equal to the instrument; the rank form and the direct pairwise count agree on both, which INV-017 F-2 checks on every record. Trapezoidal integration over a grid of points is not this metric and is not registered."
+   },
+   "stored_as": {
+    "value": "fraction",
+    "status": "VERIFIED",
+    "note": "A proportion in [0, 1], never a percentage."
+   },
+   "implementation": {
+    "value": "implementation/library/matching.py, auc_at_1 and auc_pairwise",
+    "status": "VERIFIED",
+    "note": "The code refuses to run against a manifest whose definition text differs from the one it implements."
+   }
+  }
+ },
+ "not_in_this_manifest": {
+  "note": "No protocol: which pairs are compared is not a metric's business, and no protocol manifest exists. No matcher: a metric is computed over scores whatever produced them. No threshold policy other than the one eer@1's own definition fixes."
+ }
+}
