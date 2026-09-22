@@ -7,7 +7,7 @@ which is an instrument of the investigation and not the invocation `REF-012`
 adopted.
 
 Imported, never invoked as a command; the command form is
-`scripts/measure_coordinate_frames.sh`. Only ranges and counts leave this
+`scripts/measure_coordinate_frames.py`. Only ranges and counts leave this
 process: no coordinate of any corpus minutia is returned.
 """
 import ctypes

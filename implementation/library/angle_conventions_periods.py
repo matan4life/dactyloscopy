@@ -2,7 +2,7 @@
 
 The ridge period is a parameter of the construction and not an incidental, so
 the sweep is repeated at 7, 9, 11 and 13 pixels. Imported, never invoked as a
-command; the command form is `scripts/measure_angle_conventions.sh`.
+command; the command form is `scripts/measure_angle_conventions.py`.
 """
 import math
 import os

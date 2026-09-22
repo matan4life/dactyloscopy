@@ -8,7 +8,7 @@ named set of fields, so that the rules cannot drift away from the refinement
 without something failing.
 
 The other two are that the rules are stated in `REF-014`, and that the verifier
-prints the class it assigned to every field, which `scripts/verify_manifests.sh`
+prints the class it assigned to every field, which `scripts/verify_manifests.py`
 does.
 
 Every manifest here is written by the test. `REF-013` section 6 keeps corpus

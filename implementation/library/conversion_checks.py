@@ -17,7 +17,7 @@ enter the score below the minutia cap, and which minutiae survive above the
 cap of 150 that `MAN-tools.v2` records.
 
 Imported, never invoked as a command; the command form is
-`scripts/measure_conversion.sh`. Nothing per-minutia leaves `measure()`.
+`scripts/measure_conversion.py`. Nothing per-minutia leaves `measure()`.
 """
 import os
 import subprocess

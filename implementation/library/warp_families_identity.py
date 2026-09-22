@@ -7,7 +7,7 @@ and not algebra: it fits 40 synthetic problems with planted outliers at four
 iteration counts and reports the worst disagreement at each.
 
 Imported, never invoked as a command; the command form is
-`scripts/measure_warp_families.sh`.
+`scripts/measure_warp_families.py`.
 """
 
 import numpy as np

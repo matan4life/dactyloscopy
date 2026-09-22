@@ -7,7 +7,7 @@ resampled and no border is invented, so the deviation that remains is the
 extractor's, not a deformation's.
 
 Imported, never invoked as a command, as `REF-013` decision 3 requires; the
-command form is `scripts/measure_noise_floor.sh`, which imports and calls.
+command form is `scripts/measure_noise_floor.py`, which imports and calls.
 
 `measure(src_dir, tag)` returns the aggregate the record is written from. Every
 minutia stays inside this run: positions are read, forked into the worker

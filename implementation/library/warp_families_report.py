@@ -5,7 +5,7 @@ Every table in the record is printed by this module from the aggregate
 by the same path the record did.
 
 Imported, never invoked as a command; the command form is
-`scripts/measure_warp_families.sh`.
+`scripts/measure_warp_families.py`.
 """
 import math
 

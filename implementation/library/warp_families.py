@@ -8,7 +8,7 @@ over six pairing radii. No model re-pairs: a model allowed to choose its own
 correspondences chooses the ones that flatter it.
 
 Imported, never invoked as a command, as `REF-013` decision 3 requires; the
-command form is `scripts/measure_warp_families.sh`, which imports and calls.
+command form is `scripts/measure_warp_families.py`, which imports and calls.
 
 `measure(src_dir, tag)` returns the aggregate the record is written from. Every
 minutia stays inside this run: positions are read, forked into the worker

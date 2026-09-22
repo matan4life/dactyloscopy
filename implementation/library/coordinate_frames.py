@@ -5,7 +5,7 @@ named half, so that a minutia can occur only in the half that carries the
 field and the answer is known by construction.
 
 Imported, never invoked as a command, as `REF-013` decision 3 requires; the
-command form is `scripts/measure_coordinate_frames.sh`, which imports and
+command form is `scripts/measure_coordinate_frames.py`, which imports and
 calls. `measure()` returns one row per case and prints the same.
 """
 import ctypes

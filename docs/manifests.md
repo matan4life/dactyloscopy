@@ -207,6 +207,20 @@ digest no longer matches it, and a status set to `CONFLICT` on a field the
 verifier would otherwise have checked. The third is the reading rule: the value
 was correct, and the point is that it was never fetched.
 
+Since 2026-09-22 the command form is `scripts/verify_manifests.py`, which
+takes the tree from its own location and no longer reads `REPO=`, so the copy
+is verified by running the copy's own file:
+
+    $ docker run --rm -v "<tampered>:/tampered:ro" -v "<repo>:/work:ro" \
+        -w /work dactyloscopy:dev python3 /tampered/scripts/verify_manifests.py
+
+Run on 2026-09-22 against the same three defects planted in the manifests as
+they are now, it printed `21 checked, 3 of them failing`, `322 not checked
+here, 1 of those refused for their status` and `FAIL: 4 checks did not pass`,
+and exited 1: the mindtct binary digest now also fails the identity composed
+from it, `tools.mindtct.identity.composed_sha256`, a check the verifier did
+not make when the account above was written.
+
 Note where the third one is counted. Two of the three are failures of a check,
 so the run says "21 checked, 2 of them failing"; the refusal is not a check and
 is counted among the 311 that were not checked, with its own tally. Counting a
@@ -281,7 +295,7 @@ code rather than of the intention.
 
 Three further findings are recorded and not acted on. The classification is
 structural and a block is not always homogeneous, which the section above
-states. `scripts/verify_manifests.sh` carries the whole report as an embedded
+states. `scripts/verify_manifests.py` carries the whole report in its main
 program, so a run that imports the module gets `verify` and `summarise` and
 must format its own output. And the fix that makes a `checksums` field verify
 the corpus depends on a sibling key literally named `path`, so a manifest that

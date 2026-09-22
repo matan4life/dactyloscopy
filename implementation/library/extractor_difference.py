@@ -7,7 +7,7 @@ Correspondence is swept over a range of radii and computed three ways, because
 choosing one radius or one assignment rule chooses the answer.
 
 Imported, never invoked as a command, as `REF-013` decision 3 requires; the
-command form is `scripts/measure_extractor_difference.sh`, which imports and
+command form is `scripts/measure_extractor_difference.py`, which imports and
 calls.
 
 `measure(src_dir, tag)` returns the aggregate the record is written from. Every

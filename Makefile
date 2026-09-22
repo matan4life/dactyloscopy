@@ -25,7 +25,7 @@ DATA_MOUNTS := -v "$(LABDATA_HOST)/raw:/data/raw:ro" -v "$(LABDATA_HOST)/derived
 REPO_MOUNT := -v "$(REPO):/work"
 
 .DEFAULT_GOAL := help
-.PHONY: help image shell test check-tools verify run-matching reproduce-matching
+.PHONY: help image shell test check-tools verify run-matching reproduce-matching record-run
 
 help: ## List the targets
 	@echo "Targets:"
@@ -79,10 +79,10 @@ test: ## Run pytest in the container; needs no data
 verify: ## Verify every manifest against what it names; LABDATA adds the corpus
 	@if [ -n "$(LABDATA)" ]; then \
 	  $(DOCKER) run --rm $(REPO_MOUNT) -v "$(LABDATA_HOST)/raw:/data/raw:ro" \
-	    -w /work -e LABDATA=/data "$(IMAGE)" bash scripts/verify_manifests.sh; \
+	    -w /work -e LABDATA=/data "$(IMAGE)" python3 scripts/verify_manifests.py; \
 	else \
 	  $(DOCKER) run --rm $(REPO_MOUNT) -w /work "$(IMAGE)" \
-	    bash scripts/verify_manifests.sh; \
+	    python3 scripts/verify_manifests.py; \
 	fi
 
 check-tools: ## Verify the tools in the image against manifests/MAN-tools.v2.json
@@ -128,7 +128,7 @@ run-matching: ## One matching run on SUBSET (a manifest id) with EXTRACTOR; need
 	  exit 1; \
 	fi
 	$(DOCKER) run --rm $(REPO_MOUNT) $(DATA_MOUNTS) -w /work -e LABDATA=/data \
-	  $(PROVENANCE) "$(IMAGE)" bash scripts/run_matching.sh "$(SUBSET)" "$(EXTRACTOR)"
+	  $(PROVENANCE) "$(IMAGE)" python3 scripts/run_matching.py "$(SUBSET)" "$(EXTRACTOR)"
 
 reproduce-matching: ## Re-run from a record under LABDATA/derived and compare; RECORD is its subdirectory
 	@if [ -z "$(LABDATA)" ] || [ -z "$(RECORD)" ]; then \
@@ -140,4 +140,21 @@ reproduce-matching: ## Re-run from a record under LABDATA/derived and compare; R
 	  exit 1; \
 	fi
 	$(DOCKER) run --rm $(REPO_MOUNT) $(DATA_MOUNTS) -w /work -e LABDATA=/data \
-	  "$(IMAGE)" bash scripts/reproduce_matching.sh "/data/derived/$(RECORD)"
+	  "$(IMAGE)" python3 scripts/reproduce_matching.py "/data/derived/$(RECORD)"
+
+# The record is placed on the host, where git is: the placer reads HEAD and
+# the dirty state itself and refuses a record made from any other tree, so
+# the run: commit that follows adds a record of exactly the tree it sits on.
+PYTHON ?= python3
+
+record-run: ## Place the finished SUBSET run with EXTRACTOR under runs/ and print its run: trailers
+	@if [ -z "$(LABDATA)" ] || [ -z "$(SUBSET)" ]; then \
+	  echo "LABDATA and SUBSET are both required, for example:"; \
+	  echo ""; \
+	  echo "  make record-run LABDATA=/path/to/labdata SUBSET=fvc2002/DB1_B"; \
+	  echo "  make record-run LABDATA=/path/to/labdata SUBSET=fvc2002/DB1_B EXTRACTOR=iso-extract"; \
+	  echo ""; \
+	  echo "The record is read from \$$LABDATA/derived/matching/<subset>_<extractor>."; \
+	  exit 1; \
+	fi
+	LABDATA="$(LABDATA)" $(PYTHON) scripts/record_run.py "$(SUBSET)" "$(EXTRACTOR)"

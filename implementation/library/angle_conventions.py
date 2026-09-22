@@ -6,7 +6,7 @@ interpretation of a picture, and the direction is computed exactly from the
 gradient of the phase with that dislocation's own singular term removed.
 
 Imported, never invoked as a command, as `REF-013` decision 3 requires; the
-command form is `scripts/measure_angle_conventions.sh`, which imports and
+command form is `scripts/measure_angle_conventions.py`, which imports and
 calls.
 
 `measure()` returns the rows the record is written from. No corpus image is

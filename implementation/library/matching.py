@@ -20,7 +20,7 @@ so the code and the registration cannot drift apart silently. The text
 travels with the number.
 
 Imported, never invoked as a command, as `REF-013` decision 3 requires; the
-command form is `scripts/run_matching.sh`, which imports and calls.
+command form is `scripts/run_matching.py`, which imports and calls.
 
 `measure(repo_root, subset_id, work, extractor, conversion)` returns the
 observation and the metrics. The extractor is `mindtct`, whose `.xyt` goes to

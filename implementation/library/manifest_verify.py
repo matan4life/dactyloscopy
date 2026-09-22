@@ -16,7 +16,7 @@ The three classes are `REF-014`'s:
 
 Nothing here shells out, and nothing here is invoked as a command:
 `REF-013` decision 3 puts code that runs in this process in this directory and
-keeps command invocation out of it. `scripts/verify_manifests.sh` is the
+keeps command invocation out of it. `scripts/verify_manifests.py` is the
 command, and a run imports `verify` directly.
 
 The reading rule of `REF-014` decision 7 is implemented here and nowhere else:
