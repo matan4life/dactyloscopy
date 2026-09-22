@@ -31,6 +31,13 @@ that records it.
   names its tools and `D-4` is closed (`REF-017`, issue #8); two more
   `run:` commits, `iso-extract + bozorth3` on both `DB1` subsets. The test
   suite is 78.
+- One process pool for the three instruments that had each carried their
+  own, `implementation/library/pool.py`, held to task order by a test; the
+  suite is 82. Every command form under `scripts/` is a Python file,
+  `python3 scripts/<name>.py`, in place of a shell script that embedded the
+  same Python in a heredoc, and `make record-run` places a finished record.
+  Each record whose command form changed says so and that its aggregate is
+  byte for byte what the shell form returned.
 
 ## 2026-09-21
 
