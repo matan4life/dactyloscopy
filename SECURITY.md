@@ -51,7 +51,10 @@ prohibition is absolute rather than conditional, and why it is repeated in
 ## Scope
 
 There is no service, no server, no account and no credential in this
-repository. The code, once there is any, runs locally against data mounted
-read-only from outside the tree. There are no dependencies yet; when there
-are, a vulnerability in one is handled as an ordinary change unless it touches
-the data policy above.
+repository. The code runs locally, inside the container image `Dockerfile`
+builds, against raw data mounted read-only from outside the tree. The
+dependencies are the ones that file pins: a base image by digest, three
+Python packages by exact version, NBIS by archive checksum, and
+FingerJetFXOSE and its cxxtest submodule by commit id. A vulnerability in one
+of them is handled as an ordinary change unless it touches the data policy
+above.

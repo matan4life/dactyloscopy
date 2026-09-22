@@ -5,8 +5,14 @@ in [quality/REF-002-commit-convention.md](../quality/REF-002-commit-convention.m
 this page says how, not why.
 
 Every number, commit id, dataset name and tool name on this page is there to
-show the form. No run has produced them, and none of them is a choice this
-repository has made.
+show the form. The commit ids are those of a throwaway repository (see "What
+was checked"), and the numbers were written on 2026-09-03, before this
+repository had made a run. The values of the run example - `0.0323`,
+`0.032264` and `0.987210` - coincide, to the digits shown, with what
+`INV-017` F-1 measured on that subset with `mindtct` and `bozorth3`;
+`INV-017` F-9 states the coincidence and leaves where the page's digits came
+from unchecked. The `0.0311` of the illustrative later run coincides with
+nothing.
 
 ## Subject
 
@@ -52,7 +58,8 @@ optional otherwise.
   "What was checked").
 - Only fields one would filter, sort or cross-check on. The set for each
   kind is a projection of that record's schema; for a `run:` commit that
-  records an observation, that projection is open (M-1).
+  projection is REF-016 decision 7: `Result:` once per metric, `Dataset:`
+  with the manifest id, `Record:` with the run id.
 - A list is a repeated key. A metric and its value share one value:
 
       Result: eer@1 0.032264
@@ -63,7 +70,8 @@ optional otherwise.
 ## Examples
 
 The trailer blocks below show the shape of a block, not the full set of keys
-a commit will carry: for a run that set is open (M-1).
+a commit will carry: for a run that set is REF-016 decision 7, and the block
+below carries only its `Result:` lines.
 
 ### A run
 

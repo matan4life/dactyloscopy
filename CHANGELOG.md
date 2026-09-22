@@ -4,11 +4,45 @@ Dated entries, newest first. An entry records what changed in the repository.
 Numbers never appear here: a result lives in `runs/` and in the `run:` commit
 that records it.
 
+## 2026-09-22
+
+- An investigation's aggregate decided to be derived data under
+  `$LABDATA/derived`, never committed (`REF-015`); the composition of a run
+  record decided from what `INV-017` measured, closing `M-1` (`REF-016`,
+  issue #1).
+- `eer@1` and `auc@1` registered by id, version and full definition as
+  `MAN-metrics.v1`; the matching instrument refuses a registration whose
+  text is not the text it implements.
+- The matching run verifies the dataset, tools and metrics manifests before
+  it reads an image; the two metrics put under test; dead code dropped; the
+  command in each `measure_*.sh` header and three Makefile recipes rewritten
+  so that they run as printed.
+- `INV-011` and `INV-012` say which of their numbers the tree cannot
+  produce; two citations of a fact label `INV-003` does not have corrected.
+- The first two `run:` commits: `mindtct` templates scored by `bozorth3`
+  under the organisers' comparison lists on `fvc2002/DB1_B` and
+  `fvc2002/DB1_A`, each recorded under `runs/` with its observation beside
+  it, placed by `scripts/record_run.sh`.
+- Every document brought to what the tree can back; issue #10 lists the
+  numbers of `INV-002` to `INV-012` that no tracked file produces.
+
 ## 2026-09-21
 
 - The status in `README.md`, the publication sentence in `CONTRIBUTING.md`
   and this file brought up to date. The last two had stood since the days
   the repository held documents only; the status since 2026-09-07.
+- A matching instrument put in the tree: `implementation/library/matching.py`
+  makes a run on a subset addressed by its manifest id, and `run_record.py`
+  composes the record and re-derives its numbers; the command forms are
+  `scripts/run_matching.sh` and `scripts/reproduce_matching.sh`, reached
+  through `make run-matching` and `make reproduce-matching`. The
+  definitions the instrument computes under are its own text, no tracked
+  file then defining either metric.
+- `INV-017`: the first runs under a comparison list inside this system, on
+  `fvc2002/DB1_B` and `fvc2002/DB1_A` over the organisers' own lists, made
+  to find what a run record must carry.
+- Three sentences in `INV-013`, `INV-014` and `INV-015` cut back to what
+  the list or table beside each shows.
 
 ## 2026-09-09
 

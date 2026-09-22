@@ -23,11 +23,15 @@ machine to do anything.
 The test is what a file is, not where it sits. A script that fetches a pinned
 binary and verifies its checksum is code in whatever directory it lives; a
 manifest is a document in whatever directory it lives. A directory listing
-would rot the first time the layout changed, and the layout is not decided.
+would rot the first time the layout changed, and the layout is a decision of
+[quality/REF-013-implementation-layout.md](../quality/REF-013-implementation-layout.md),
+not of this page.
 
-Today no tracked file carries a source extension (see "What was checked"), so
-apart from the two licence texts every file in the repository is under
-CC BY 4.0.
+Today the tree holds both. The modules under `implementation/`, the suite
+under `tests/`, the scripts under `scripts/` and the build files `Makefile`
+and `Dockerfile` are code, under MIT (see "What was checked"); the record
+chain in `quality/`, the manifests, the pages in `docs/` and the other
+documents are under CC BY 4.0, apart from the two licence texts.
 
 ## Attribution
 
@@ -120,11 +124,22 @@ The stored licence text is byte-identical to the canonical one:
     $ sha256sum LICENSES/CC-BY-4.0.txt
     9ba9550ad48438d0836ddab3da480b3b69ffa0aac7b7878b5a0039e7ab429411 *LICENSES/CC-BY-4.0.txt
 
-No tracked file carries a source extension:
+On that day no tracked file carried a source extension:
 
     $ git ls-files | grep -Ei "\.(py|c|h|cc|cpp|rs|go|sh|js|ts)$"
     $ echo $?
     1
+
+Re-run on 2026-09-22 at `dd0d428`, the same filter finds the code that has
+arrived since; the matches are counted by directory rather than listed, so
+that this section does not become the directory listing "The boundary"
+declines to keep:
+
+    $ git ls-files | grep -Ei "\.(py|c|h|cc|cpp|rs|go|sh|js|ts)$" | sed 's|/[^/]*$||' | sort | uniq -c
+         12 implementation/library
+          1 implementation/tools
+          9 scripts
+          3 tests
 
 ## References
 

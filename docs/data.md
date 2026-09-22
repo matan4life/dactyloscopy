@@ -8,23 +8,28 @@ nothing added to it can be assumed removable afterwards. So no
 input data lives in the tree: not in a fixture, not temporarily, not in a
 branch. The extensions `.tif .tiff .bmp .pgm .raw .ist .xyt .min` are ignored
 by `.gitignore`, which stops an accident and not an intent: `git add -f`
-overrides it, and an enforcing gate arrives with the toolchain refinement. A
-commit that adds one is an incident; see [SECURITY.md](../SECURITY.md).
+overrides it, and no enforcing gate exists; the toolchain refinement,
+`REF-013`, brought none. A commit that adds such a file is an incident; see
+[SECURITY.md](../SECURITY.md).
 
 ## Where input data lives
 
-Input data is mounted read-only from outside the tree. Locations are resolved
-from the environment, and `.env.example` documents the contract:
+Input data is mounted read-only from outside the tree. One environment
+variable locates it, and `.env.example` documents it:
 
-- `LABDATA` is the only required variable: the root that holds every
-  location by default.
-- `LAB_RAW` optionally overrides the raw location. It is opened read-only
-  and never written to.
-- `LAB_DERIVED` optionally overrides the derived location. It is read-write,
-  regenerable, and never committed.
+- `LABDATA` is the variable every run reads: the root that holds every
+  location. One check, `make check-tools`, takes the fixture directory as
+  `FVC_DB1_B` instead, because it predates the corpus manifest.
+- `$LABDATA/raw` is the raw location. The `Makefile` mounts it read-only into
+  the container, and it is never written to.
+- `$LABDATA/derived` is the derived location. The `Makefile` mounts it
+  read-write; what is written there is regenerable and never committed.
 
-Each location resolves as `LAB_<NAME>`, then `$LABDATA/<name>`, then an error
-that names every missing location at once.
+`.env.example` also names `LAB_RAW` and `LAB_DERIVED` as overrides of the two
+locations, resolved before `$LABDATA/<name>`, with an error that names every
+missing location at once. Nothing in the tree reads either variable or raises
+that error: every location a manifest names is resolved through `LABDATA`
+alone, and the command forms that take a path take it as an argument.
 
 Code never carries a dataset path as a literal. A dataset is addressed by its
 manifest id, `<competition>/<subset>`, for example `fvc2002/DB1_A`, and the
@@ -37,9 +42,14 @@ carries one `sha256sum`-format list per subset, and
 `manifests/MAN-fvc2002.v1.json` names each list and the digest of that list.
 `make verify LABDATA=<root>` checks both halves — each list against the digest
 recorded for it, and every file the list names against the corpus — and
-`docs/manifests.md` records what that printed. The other two do not exist:
-there is no run and no score vector, because no run has happened. What follows is the policy that governs publication, and the reason
-each part of it is safe to publish.
+`docs/manifests.md` records what that printed. The other two exist but are
+not published yet: `INV-017` made a matching run on `fvc2002/DB1_B` and
+`fvc2002/DB1_A`, and its pair lists and score vectors live under
+`$LABDATA/derived`, outside the tree, with their digests recorded in that
+investigation; the two runs recorded under `runs/` carry theirs beside the
+record, as `REF-016` decides. What follows is
+the policy that governs publication, and the reason each part of it is safe
+to publish.
 
 | Published, or to be | What it is | Why it is safe |
 | --- | --- | --- |

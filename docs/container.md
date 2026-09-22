@@ -2,14 +2,15 @@
 
 The image pins the environment, git pins the code, and a run record names
 both. This page says how to use them and records what was checked; the
-`Makefile` is the only place a `docker run` invocation is written, so a
+`Makefile` is the only place a `docker run` is executed from, so a
 command that produced a number can be read back from the tree rather than
 from a shell history.
 
 Every command below was run on 2026-09-06 and the output shown is what it
 printed, except where a section says it was re-captured on 2026-09-07 — the
-day the image gained a third tool and the day the manifest verifier was added.
-A section that was re-captured says so and says what it used to claim.
+day the image gained a third tool and the day the manifest verifier was added
+— or on 2026-09-22, when the page was checked against the tree again. A
+section that was re-captured says so and says what it used to claim.
 
 ## The machine it was checked on
 
@@ -75,8 +76,8 @@ same command mounts what it says:
     CONTRIBUTING.md
     LICENSE
 
-The `Makefile` therefore prefixes every docker invocation with
-`MSYS_NO_PATHCONV=1`, takes the repository path from `pwd -W` and converts
+The `Makefile` therefore prefixes every `docker run` and `docker build`
+with `MSYS_NO_PATHCONV=1`, takes the repository path from `pwd -W` and converts
 `LABDATA` with `cygpath -m`, so that docker receives Windows paths and the
 shell leaves them alone. The mounts are verified from inside the container
 further down, not assumed.
@@ -95,8 +96,19 @@ further down, not assumed.
 The build log is cut at the `...`. The identifier printed is the image ID,
 which is the digest of the image configuration. A locally built image has no
 repository digest until it is pushed, so the ID is what identifies this build,
-and the `FROM` line is printed beside it because that is the pin a run record
-has to carry.
+and the `FROM` lines are printed beside it because that is the pin a run
+record has to carry; the transcript below is from 2026-09-06, when the
+`Dockerfile` had one, and at three stages it prints three, all pinned to the
+same digest.
+
+The id above is the build of 2026-09-06 and no record in the tree cites it.
+The image was rebuilt on 2026-09-07 when the third tool was added, and the id
+of that build, read back on 2026-09-22 with the command the `image` target
+prints it with, is the one `docs/tools.md` shows being written and the only
+one any investigation in `quality/` names:
+
+    $ docker image inspect dactyloscopy:dev --format '{{.Id}}'
+    sha256:e0ded5a5dcc8f594df58ab904be76605ad26492da834130592091b1348f7c3fc
 
 ### 2 and 3. The session, its mounts, and the read-only raw directory
 
@@ -141,26 +153,30 @@ The check is of the mounts, not of any data: no dataset was mounted, and
 
 ### 4. `make test` runs pytest, and a failing test fails the target
 
-Re-captured on 2026-09-07. Until then there was no suite, and this section
-recorded that the target translated pytest's exit 5 — it collected nothing —
-into success. There is a suite now, so that translation was removed: collecting
-nothing would mean the mount or the suite is wrong, and `make test` reports it.
+Re-captured on 2026-09-07 and again on 2026-09-22. Until 2026-09-07 there was
+no suite, and this section recorded that the target translated pytest's exit 5
+— it collected nothing — into success. There is a suite now, so that
+translation was removed: collecting nothing would mean the mount or the suite
+is wrong, and `make test` reports it. Until 2026-09-22 the transcript below
+showed 47 tests over two files.
 
     $ make test
     MSYS_NO_PATHCONV=1 docker run --rm -v "D:/My PET Projects/dactyloscopy:/work" -w /work "dactyloscopy:dev" python -m pytest
     ============================= test session starts ==============================
     platform linux -- Python 3.12.14, pytest-9.1.1, pluggy-1.6.0
     rootdir: /work
-    collected 47 items
+    collected 68 items
 
-    tests/test_iso_extract.py ......................                         [ 46%]
-    tests/test_manifest_verify.py .........................                  [100%]
+    tests/test_iso_extract.py ......................                         [ 32%]
+    tests/test_manifest_verify.py .................................          [ 80%]
+    tests/test_matching.py .............                                     [100%]
 
-    ============================== 47 passed in 0.60s ==============================
+    ============================== 68 passed in 1.12s ==============================
     $ echo $?
     0
 
-A failing test fails the target:
+A failing test fails the target. This transcript is the capture of 2026-09-07,
+when the suite was 47; the `test` recipe has not changed since:
 
     $ printf 'def test_that_fails():\n    assert 1 == 2\n' > tests/test_sanity_probe.py
     $ make test
@@ -171,11 +187,17 @@ A failing test fails the target:
 The probe file was deleted afterwards and is not in the tree.
 
 `test` mounts the repository and nothing else, so it needs no `LABDATA`. The
-counts were re-captured on 2026-09-07: the suite was 22 tests over one file
-until `tests/test_manifest_verify.py` took it to 47. What the suite checks is
-`docs/tools.md`'s and `docs/manifests.md`'s subject, not this page's.
+counts were re-captured on 2026-09-22: the suite was 22 tests over one file
+until `tests/test_manifest_verify.py` took it to 45, then 47 and 55 the same
+day, 2026-09-07; `tests/test_matching.py` took it to 68 on 2026-09-22. What
+the suite checks is `docs/tools.md`'s, `docs/manifests.md`'s and
+`MAN-metrics.v1`'s subject, not this page's.
 
 ### 5. `make shell` without `LABDATA` starts nothing
+
+Re-captured on 2026-09-22. The message is what it was on 2026-09-06; the line
+`make` names in its error was 45 then and is 49 now, because lines were added
+above the target.
 
     $ unset LABDATA; make shell
     LABDATA is not set, so nothing was started.
@@ -191,7 +213,7 @@ until `tests/test_manifest_verify.py` took it to 47. What the suite checks is
       LABDATA=/path/to/labdata make shell
 
     or export it in the shell. See docs/data.md for what may live there.
-    make: *** [Makefile:45: shell] Error 1
+    make: *** [Makefile:49: shell] Error 1
 
 The target fails, which is intended: a missing mount is not something to
 proceed past. What it does not do is let docker produce the error, which
@@ -201,6 +223,8 @@ would name a path rather than the variable that has to be set.
 
 Re-captured twice on 2026-09-07: once because `check-tools` and `FVC_DB1_B`
 existed and were not in the listing, and again when `verify` was added.
+Re-captured on 2026-09-22 because `run-matching` and `reproduce-matching`,
+added on 2026-09-21, were not in the listing.
 
     $ make
     Targets:
@@ -210,6 +234,8 @@ existed and were not in the listing, and again when `verify` was added.
       test         Run pytest in the container; needs no data
       verify       Verify every manifest against what it names; LABDATA adds the corpus
       check-tools  Verify the tools in the image against manifests/MAN-tools.v2.json
+      run-matching One matching run on SUBSET (a manifest id); needs LABDATA
+      reproduce-matching Re-run from a record under LABDATA/derived and compare; RECORD is its subdirectory
 
     Variables:
       IMAGE        image name and tag (currently dactyloscopy:dev)
@@ -217,12 +243,16 @@ existed and were not in the listing, and again when `verify` was added.
                    and by verify if the corpus is to be checked
       FVC_DB1_B    directory of FVC2002 Db1_b images; required by check-tools
 
-What `verify` prints is `docs/manifests.md`'s subject.
+What `verify` prints is `docs/manifests.md`'s subject. What `run-matching`
+writes, and where, is `quality/INV-017`'s.
 
 `help` is the default goal, so `make` with no argument prints the menu rather
-than doing something. The listing is generated from the `##` comments in the
-`Makefile`, so a target added without one is invisible here; that is the only
-way this section can go stale again.
+than doing something. The target listing is generated from the `##` comments
+in the `Makefile`, so a target added without one is invisible here; the
+`Variables` block is written by hand, and it does not name `SUBSET` or
+`RECORD`, which the two targets of 2026-09-21 require. Both of those targets
+carried their comment and this section was stale for a day anyway, because a
+listing is only as current as its last capture.
 
 ## What the image does not contain
 
