@@ -539,17 +539,23 @@ on the ridge period; no earlier record measures it.
 
 ## Reproducing this
 
-**The instrument is in the tree.** The sweep is
-`implementation/library/angle_conventions.py` and the period check of the last
-section is `implementation/library/angle_conventions_periods.py`; the command
-form that runs both is `scripts/measure_angle_conventions.sh`. The record was
-written from a run of that code before it was committed; the committed module
-is the same code with its driver wrapped in a function, so that it is imported
-rather than invoked, which `implementation/library/README.md` and `REF-013`
-decision 3 require. Re-run from the tree it returns the same 648 rows, the
-same structure-tensor maximum of 1.160 degrees over 90 points, the same
-circular means of 178.624 and 0.117 degrees with the same concentrations, and
-the same four period rows.
+**The sweep is in the tree; the statistics computed from it are not.** The
+sweep is `implementation/library/angle_conventions.py`, which returns the 648
+per-point rows, the placement residuals, the structure-tensor maximum of 1.160
+degrees over 90 points and the ray rows of F-1; the period check of the last
+section is `implementation/library/angle_conventions_periods.py`, which prints
+the four period rows; the command form that runs both is
+`scripts/measure_angle_conventions.sh`. Re-run from the tree those return the
+same rows and the same maximum. **Every statistic of F-2 to F-7 - the
+circular means of 178.624 and 0.117 degrees and their concentrations, the
+extremes, the counts within a step, the per-family means of F-6 and the
+distinct-value counts of F-7 - was computed from those rows by a script that
+is not in the tree and was not kept.** Nothing in the tree computes a
+circular mean over the sweep. Until an instrument does, F-2 to F-7 rest on
+this record's account of a computation a reader can repeat from the rows but
+cannot run. A paragraph written on 2026-09-09 said a re-run returns those
+means and concentrations; it returns the rows they were computed from, and
+this paragraph replaces it.
 
 Every command was run on 2026-09-08 against the tree at `a16f58d`. `$SP` is a
 scratch directory outside the tree. No corpus image was mounted into any

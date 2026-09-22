@@ -461,15 +461,21 @@ refinement takes it.
 
 ## Reproducing this
 
-**The instrument is in the tree.** The origin test of F-3 is
-`implementation/library/coordinate_frames.py`, and the worked example of F-1
-and F-2 together with F-4, F-5 and F-6 are
+**Most of the instrument is in the tree, and this paragraph says which part
+is not.** The origin test of F-3, with the right-half retries, is
+`implementation/library/coordinate_frames.py`; the worked example of F-1 and
+F-2, F-4's header table, F-5's ranges and F-6's first table - the header
+resolution and coordinate range at each declared value - are
 `implementation/library/coordinate_frames_fixture.py`; the command form that
-runs both is `scripts/measure_coordinate_frames.sh`. The record was written
-from a run of that code before it was committed; the committed module is the
-same code with its driver wrapped in a function, so that it is imported rather
-than invoked, which `implementation/library/README.md` and `REF-013` decision
-3 require. Re-run from the tree it prints every number below unchanged.
+runs both is `scripts/measure_coordinate_frames.sh`, and re-run from the tree
+those print the numbers the record carries unchanged. **Two measurements were
+made by code that is not in the tree**: F-4's argument-swap test, the two
+lines under "Swapping the two arguments was measured rather than imagined",
+and F-6's second table, the sorted first four coordinates at each declared
+value. Both were run on 2026-09-08 by a script that was not kept, and until an
+instrument in the tree produces them they rest on this record's account
+alone. A paragraph written on 2026-09-09 said the module prints every number
+below; it did not, and this paragraph replaces it.
 
 Every command was run on 2026-09-08 against the tree at `7cbe80b`. `$SP` is a
 scratch directory outside the tree and `$FIX` is the read-only mount of the

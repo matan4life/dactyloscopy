@@ -332,7 +332,7 @@ loses a minutia, one gains one. And the sizes obey `24 + 6 + 6 * count` in
 every row, which is the layout `INV-003` F-2 gives, so the byte at offset 27
 and the file length agree independently.
 
-**What this settles elsewhere.** `INV-003` R-6 reported, as `UNVERIFIED`, that
+**What this settles elsewhere.** `INV-003` R-4 reported, as `UNVERIFIED`, that
 this tool produces 26 minutiae in 186 bytes for `101_1`, 16 in 126 for `101_2`
 and 60 in 390 for `102_1`. Those are the sample's figures in the table above,
 and the sizes are 186, 126 and 390. R-6 is reproduced here exactly. It is also

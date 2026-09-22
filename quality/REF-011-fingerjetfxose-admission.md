@@ -264,9 +264,9 @@ the one the sample passes, and the reference reader passes the same one so that
 it differs from the sample in one thing only. The facts `REF-007` decision 4
 rests on are unchanged and so is the decision.
 
-### 9. `INV-003` R-6 is correct and is now explained
+### 9. `INV-003` R-4 is correct and is now explained
 
-`INV-003` R-6 recorded three pairs of numbers as `UNVERIFIED`, reported from
+`INV-003` R-4 recorded three pairs of numbers as `UNVERIFIED`, reported from
 outside this repository. `INV-007` F-8 reproduces them exactly, as the figures
 the upstream sample produces, and shows what they are figures of: templates
 taken from a buffer that begins with the separator byte.
