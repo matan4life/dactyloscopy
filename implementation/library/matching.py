@@ -32,14 +32,13 @@ integer scores and a minutia count per image, never a position.
 """
 import hashlib
 import json
-import multiprocessing
 import os
 import subprocess
 
 import numpy as np
 from PIL import Image
 
-from implementation.library import iso_xyt, manifest_verify
+from implementation.library import iso_xyt, manifest_verify, pool
 
 WORK = os.environ.get("INV017_WORK", "/tmp/inv017")
 
@@ -282,12 +281,6 @@ def check_binaries(ident):
     return got
 
 
-def _scratch():
-    d = os.path.join(WORK, str(os.getpid()))
-    os.makedirs(d, exist_ok=True)
-    return d
-
-
 _JOB = {}
 
 
@@ -300,7 +293,7 @@ def _extract_work(name):
     the template's. Returns the count and the .xyt bytes; the .xyt is kept
     only in the run's own scratch, never returned to a caller outside it."""
     src = os.path.join(_JOB["subset_dir"], name)
-    wk = _scratch()
+    wk = pool.scratch(WORK)
     img = Image.open(src).convert("L")
     if _JOB["extractor"] == "mindtct":
         png = os.path.join(wk, "a.png")
@@ -342,7 +335,7 @@ def _score_work(task):
     and says so only on its error stream, so a run that reads stdout alone
     cannot tell an overflow from a very strong match."""
     a, b = task
-    wk = _scratch()
+    wk = pool.scratch(WORK)
     pa, pb = os.path.join(wk, "a.xyt"), os.path.join(wk, "b.xyt")
     with open(pa, "wb") as fp:
         fp.write(_JOB["xyt"][a])
@@ -353,30 +346,6 @@ def _score_work(task):
     os.remove(pa)
     os.remove(pb)
     return int(run.stdout.strip()), run.stderr.strip()
-
-
-def _cpus():
-    try:
-        n = len(os.sched_getaffinity(0))
-    except AttributeError:
-        n = os.cpu_count() or 1
-    return max(1, n)
-
-
-def _pool(tasks, fn):
-    """Map fn over tasks in order. Both workers are pure functions of their
-    input and the frozen binaries, so a pool moves no number; `imap`
-    delivers in task order."""
-    n = _cpus()
-    if n < 2 or len(tasks) < 2 or os.environ.get("INV017_SERIAL"):
-        for t in tasks:
-            yield fn(t)
-        return
-    ctx = multiprocessing.get_context("fork")
-    chunk = max(1, min(len(tasks) // (n * 4), 32))
-    with ctx.Pool(n) as pool:
-        for out in pool.imap(fn, tasks, chunksize=chunk):
-            yield out
 
 
 # -------------------------------------------------------------- the metrics
@@ -520,7 +489,7 @@ def measure(repo_root, subset_id, work=None, extractor="mindtct",
                  "bozorth3_flags": list(res["tools"][MATCHER]["flags"]),
                  "conversion": conv})
     counts, xyt, refusals = {}, {}, {}
-    for out in _pool(names, _extract_work):
+    for out in pool.run(names, _extract_work, "INV017_SERIAL"):
         counts[out["name"]] = out["count"]
         xyt[out["name"]] = out["xyt"]
         if out["refused"]:
@@ -530,7 +499,7 @@ def measure(repo_root, subset_id, work=None, extractor="mindtct",
     _JOB["xyt"] = xyt
 
     tasks = genuine + impostor
-    scored = list(_pool(tasks, _score_work))
+    scored = list(pool.run(tasks, _score_work, "INV017_SERIAL"))
     scores = [sc for sc, _ in scored]
     stderr = {k: err for k, (_, err) in enumerate(scored) if err}
     print("  scored %d pairs, %d with output on stderr"

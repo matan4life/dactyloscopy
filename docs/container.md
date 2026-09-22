@@ -165,13 +165,15 @@ showed 47 tests over two files.
     ============================= test session starts ==============================
     platform linux -- Python 3.12.14, pytest-9.1.1, pluggy-1.6.0
     rootdir: /work
-    collected 68 items
+    collected 82 items
 
-    tests/test_iso_extract.py ......................                         [ 32%]
-    tests/test_manifest_verify.py .................................          [ 80%]
-    tests/test_matching.py .............                                     [100%]
+    tests/test_iso_extract.py ......................                         [ 26%]
+    tests/test_iso_xyt.py ..........                                         [ 39%]
+    tests/test_manifest_verify.py .................................          [ 79%]
+    tests/test_matching.py .............                                     [ 95%]
+    tests/test_pool.py ....                                                  [100%]
 
-    ============================== 68 passed in 1.12s ==============================
+    ============================== 82 passed in 2.31s ==============================
     $ echo $?
     0
 
@@ -189,7 +191,8 @@ The probe file was deleted afterwards and is not in the tree.
 `test` mounts the repository and nothing else, so it needs no `LABDATA`. The
 counts were re-captured on 2026-09-22: the suite was 22 tests over one file
 until `tests/test_manifest_verify.py` took it to 45, then 47 and 55 the same
-day, 2026-09-07; `tests/test_matching.py` took it to 68 on 2026-09-22. What
+day, 2026-09-07; `tests/test_matching.py` took it to 68 on 2026-09-22 and
+`tests/test_iso_xyt.py` and `tests/test_pool.py` to 82 the same day. What
 the suite checks is `docs/tools.md`'s, `docs/manifests.md`'s and
 `MAN-metrics.v1`'s subject, not this page's.
 

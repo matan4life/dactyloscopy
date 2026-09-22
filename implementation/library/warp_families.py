@@ -24,7 +24,6 @@ which does not, so the claim can be checked by reading. `INV015_SERIAL=1`
 takes the sequential path, which returns the same bytes.
 """
 import math
-import multiprocessing
 import os
 import subprocess
 from array import array
@@ -32,6 +31,8 @@ from collections import Counter, defaultdict
 
 import numpy as np
 from PIL import Image
+
+from implementation.library import pool
 
 WORK = os.environ.get("INV015_WORK", "/tmp/inv015")
 
@@ -55,15 +56,8 @@ rng = np.random.default_rng(SEED)
 
 
 # ------------------------------------------------------------- extraction
-def _scratch():
-    """A scratch directory this process owns, so extraction can be pooled."""
-    d = os.path.join(WORK, str(os.getpid()))
-    os.makedirs(d, exist_ok=True)
-    return d
-
-
 def extract(path):
-    wk = _scratch()
+    wk = pool.scratch(WORK)
     img = Image.open(path).convert("L")
     w, h = img.size
     img.save("%s/a.png" % wk)
@@ -676,67 +670,6 @@ def _impostor_work(task):
     return out
 
 
-def _cpus():
-    """How many workers this process may actually run at once.
-
-    os.cpu_count() reports the machine, not the share of it a container was
-    given, and a pool sized to the machine inside a quota of four cores
-    thrashes.  The affinity mask catches cpuset and taskset; the cgroup v2
-    and v1 quota files catch --cpus.  None of this reaches a number - the
-    output does not depend on the worker count, which is what INV015_SERIAL
-    exists to demonstrate - so a bad reading costs speed and nothing else."""
-    try:
-        n = len(os.sched_getaffinity(0))
-    except AttributeError:
-        n = os.cpu_count() or 1
-    for path, sep in (("/sys/fs/cgroup/cpu.max", " "),
-                      ("/sys/fs/cgroup/cpu/cpu.cfs_quota_us", None)):
-        try:
-            with open(path) as fp:
-                text = fp.read().split()
-        except OSError:
-            continue
-        try:
-            if sep is None:
-                quota = int(text[0])
-                with open("/sys/fs/cgroup/cpu/cpu.cfs_period_us") as fp:
-                    period = int(fp.read())
-            else:
-                if text[0] == "max":
-                    continue
-                quota, period = int(text[0]), int(text[1])
-        except (OSError, ValueError, IndexError):
-            continue
-        if quota > 0 and period > 0:
-            n = min(n, max(1, quota // period))
-        break
-    return max(1, n)
-
-
-def _pool(tasks, fn):
-    """Map fn over tasks in order, in a pool if one is worth starting.
-
-    The results are yielded rather than collected, so that the caller folds
-    each one into its accumulators as it arrives and the parent never holds
-    more than a chunk of them: at twenty-two thousand pairs the collected
-    form is gigabytes of Python floats waiting to be narrowed to float32.
-    `imap` delivers in task order, which is what makes the merge a
-    sequential run's merge."""
-    n = _cpus()
-    if n < 2 or len(tasks) < 2 or os.environ.get("INV015_SERIAL"):
-        for t in tasks:
-            yield fn(t)
-        return
-    ctx = multiprocessing.get_context("fork")
-    # Capped: at four thousand tasks and above the uncapped chunk leaves a
-    # tail of work that one worker finishes alone.  Below that the value is
-    # unchanged, so a run measured before this cap runs the same way.
-    chunk = max(1, min(len(tasks) // (n * 4), 32))
-    with ctx.Pool(n) as pool:
-        for out in pool.imap(fn, tasks, chunksize=chunk):
-            yield out
-
-
 def measure(src_dir, tag):
     """Run the whole comparison over one subset directory."""
     os.makedirs(WORK, exist_ok=True)
@@ -748,8 +681,8 @@ def measure(src_dir, tag):
     print("%s: %d images, %d fingers" % (tag, len(names), len(by_finger)),
           flush=True)
 
-    IM = dict(zip(names, _pool([os.path.join(src_dir, f) for f in names],
-                               _extract_work)))
+    IM = dict(zip(names, pool.run([os.path.join(src_dir, f) for f in names],
+                                  _extract_work, "INV015_SERIAL")))
     print("  extracted %d images" % len(IM), flush=True)
 
     W = IM[names[0]]["w"]
@@ -817,7 +750,7 @@ def measure(src_dir, tag):
           flush=True)
 
     # Pass two: the pure part, merged back in pair order.
-    for out in _pool(tasks, _pair_work):
+    for out in pool.run(tasks, _pair_work, "INV015_SERIAL"):
         pair_rows.extend(out["pair_rows"])
         for tau, h in out["radial_hist"].items():
             radial_hist[tau] += h
@@ -872,7 +805,7 @@ def measure(src_dir, tag):
 
     ctasks = [(pd["fa"], pd["fb"], pd["ca"], pd["pr"]) for pd in pairdata
               if (pd["g"], pd["ai"], pd["bi"]) in consistent]
-    for res, pr in _pool(ctasks, _consistent_work):
+    for res, pr in pool.run(ctasks, _consistent_work, "INV015_SERIAL"):
         for kk, v in res.items():
             res_ho_c[kk].extend(v)
         for kk, v in pr.items():
@@ -929,7 +862,7 @@ def measure(src_dir, tag):
         if sample is None:
             continue
         itasks.append((fa, fb, sample))
-    for out in _pool(itasks, _impostor_work):
+    for out in pool.run(itasks, _impostor_work, "INV015_SERIAL"):
         imp_n.append(out["n"])
         for k, v in out["res"].items():
             imp_res[k].extend(v)

@@ -26,7 +26,6 @@ takes the sequential path.
 """
 import filecmp
 import math
-import multiprocessing
 import os
 import subprocess
 from array import array
@@ -34,6 +33,8 @@ from collections import Counter, defaultdict
 
 import numpy as np
 from PIL import Image
+
+from implementation.library import pool
 
 WORK = os.environ.get("INV016_WORK", "/tmp/inv016")
 
@@ -57,20 +58,8 @@ def band_of(r):
     return len(BANDS) - 2
 
 
-def _scratch():
-    """A scratch directory this process owns, so images can be pooled.
-
-    `run` names its files by a fixed root - "s", "s2", "a", "b", "n" - so two
-    images extracted at the same time under one directory would overwrite each
-    other's output between the write and the read.  One directory per process,
-    named by the pid, is what keeps the fixed names safe."""
-    d = os.path.join(WORK, str(os.getpid()))
-    os.makedirs(d, exist_ok=True)
-    return d
-
-
 def run(img, root):
-    wk = _scratch()
+    wk = pool.scratch(WORK)
     p = "%s/%s.png" % (wk, root)
     img.save(p)
     subprocess.run(["mindtct", p, "%s/%s" % (wk, root)], check=True,
@@ -80,7 +69,7 @@ def run(img, root):
 
 
 def mask_of(root, h):
-    wk = _scratch()
+    wk = pool.scratch(WORK)
     q = np.array([[int(v) for v in l.split()]
                   for l in open("%s/%s.qm" % (wk, root))])
     ys, xs = np.nonzero(q >= QM_T)
@@ -140,17 +129,6 @@ def pooled(store, keyf):
             for g, v in agg.items()}
 
 
-def _pool(tasks, fn):
-    """Map fn over tasks in order, in a pool if one is worth starting."""
-    n = os.cpu_count() or 1
-    if n < 2 or len(tasks) < 2 or os.environ.get("INV016_SERIAL"):
-        return [fn(t) for t in tasks]
-    ctx = multiprocessing.get_context("fork")
-    chunk = max(1, len(tasks) // (n * 4))
-    with ctx.Pool(n) as pool:
-        return list(pool.map(fn, tasks, chunksize=chunk))
-
-
 def _image_work(task):
     """Everything one image contributes, as a pool task.
 
@@ -169,7 +147,7 @@ def _image_work(task):
     order of the terms, and the accumulator dicts' insertion order is the key
     order of the JSON the record is written from."""
     k, path = task
-    wk = _scratch()
+    wk = pool.scratch(WORK)
     n1 = defaultdict(lambda: array('f'))
     n1e = defaultdict(lambda: array('f'))
     n2 = defaultdict(lambda: [0, 0, 0, 0])
@@ -337,9 +315,9 @@ def measure(src_dir, tag):
     print("%s: %d images" % (tag, len(names)), flush=True)
 
 
-    for k, res in enumerate(_pool([(i, os.path.join(src_dir, f))
-                                   for i, f in enumerate(names)],
-                                  _image_work)):
+    for k, res in enumerate(pool.run([(i, os.path.join(src_dir, f))
+                                      for i, f in enumerate(names)],
+                                     _image_work, "INV016_SERIAL")):
         counts.append(res["count"])
         if res["excluded"]:
             excluded += 1
