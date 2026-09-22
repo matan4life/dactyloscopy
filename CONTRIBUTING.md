@@ -8,19 +8,17 @@ that everything here follows.
 ## The most valuable contribution
 
 The most valuable contribution is demonstrating that a number here is wrong.
-No score vector is published yet — the two matching runs of
-`quality/INV-017-run-record-composition.md` are recorded there by their
-numbers and the digests of their records, and the records themselves live
-under `$LABDATA/derived`, outside the tree — but the corpus's per-file
-checksums are, under `manifests/checksums/`, and so are the five measurements
-of 2026-09-08 and that run of 2026-09-21 in `quality/`, each with the command
-that runs its instrument from the tree; INV-011 and INV-012 also say which of
-their numbers that command does not produce. The intent is that every claim be
-recomputable from published
-observations: per-file checksums, pair lists and score vectors, described in
-[docs/data.md](docs/data.md). Recompute a number from those; if you obtain a
-different value, open an investigation issue with the command you ran and the
-value you got. That report will be worth more than any patch.
+What is published: the corpus's per-file checksums under
+`manifests/checksums/`; four run records under `runs/`, each with its pair
+list, score vector and per-image counts beside it; and the investigations in
+`quality/`, each with the command that runs its instrument from the tree -
+`INV-011` and `INV-012` also say which of their numbers that command does
+not produce, and issue #10 lists the earlier records that rest on scripts
+the tree does not hold. The intent is that every claim be recomputable from
+those: per-file checksums, pair lists and score vectors, described in
+[docs/data.md](docs/data.md). Recompute a number; if you obtain a different
+value, open an investigation issue with the command you ran and the value
+you got. That report will be worth more than any patch.
 
 ## Issues
 

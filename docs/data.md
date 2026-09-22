@@ -43,11 +43,10 @@ carries one `sha256sum`-format list per subset, and
 `make verify LABDATA=<root>` checks both halves — each list against the digest
 recorded for it, and every file the list names against the corpus — and
 `docs/manifests.md` records what that printed. The other two exist but are
-not published yet: `INV-017` made a matching run on `fvc2002/DB1_B` and
-`fvc2002/DB1_A`, and its pair lists and score vectors live under
-`$LABDATA/derived`, outside the tree, with their digests recorded in that
-investigation; the two runs recorded under `runs/` carry theirs beside the
-record, as `REF-016` decides. What follows is
+published beside each of the four run records under `runs/`, as `REF-016`
+decides; the runs `INV-017` and `INV-018` made while investigating live under
+`$LABDATA/derived`, outside the tree, with their digests recorded in those
+investigations. What follows is
 the policy that governs publication, and the reason each part of it is safe
 to publish.
 

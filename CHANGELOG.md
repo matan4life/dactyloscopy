@@ -25,6 +25,12 @@ that records it.
   it, placed by `scripts/record_run.sh`.
 - Every document brought to what the tree can back; issue #10 lists the
   numbers of `INV-002` to `INV-012` that no tracked file produces.
+- The second extractor through the matcher: `iso-extract`'s ISO templates
+  turned into the `.xyt` `bozorth3` reads, every difference between the two
+  conventions a named parameter, each priced (`INV-018`); the run id now
+  names its tools and `D-4` is closed (`REF-017`, issue #8); two more
+  `run:` commits, `iso-extract + bozorth3` on both `DB1` subsets. The test
+  suite is 78.
 
 ## 2026-09-21
 

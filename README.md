@@ -5,7 +5,7 @@ produces can be traced to the data, the protocol, the metric definition and
 the code revision that produced it. The accounting is the product; the
 science is built on top of it.
 
-## Status: two runs, recorded
+## Status: four runs, two extractors
 
 This repository was created on 2026-09-03 and this section was last corrected
 on 2026-09-22. It held documents only until 2026-09-06.
@@ -25,13 +25,14 @@ matching run. Each investigation names the command that reproduces it from
 the tree, and two of them say which of their numbers the tree does not
 produce; issue #10 lists what the earlier records still rest on.
 
-What a run is, and what its record carries, is decided (`REF-016`), and two
-runs are recorded under `runs/`: `mindtct` templates scored by `bozorth3`
-under the organisers' comparison lists, on `fvc2002/DB1_B` and
-`fvc2002/DB1_A`, each with its pair list, score vector and per-image counts
-beside the record. What does not exist: a protocol manifest - the pairs are
-the organisers' lists, which `MAN-fvc2002.v1` records by digest - and a
-comparability key between runs, which is `M-2` and open.
+What a run is, and what its record carries, is decided (`REF-016`,
+`REF-017`), and four runs are recorded under `runs/`: `mindtct`'s templates
+and `iso-extract`'s, each scored by `bozorth3` under the organisers'
+comparison lists on `fvc2002/DB1_B` and `fvc2002/DB1_A`, each with its pair
+list, score vector and per-image counts beside the record. The log reads as
+a table: `git log --grep='^run: '`. What does not exist: a protocol manifest
+- the pairs are the organisers' lists, which `MAN-fvc2002.v1` records by
+digest - and a comparability key between runs, which is `M-2` and open.
 
 Nothing is carried over from an earlier codebase.
 
@@ -78,7 +79,7 @@ What will be published instead: per-file checksums, pair lists and score
 vectors, from which every metric will be recomputable without the images.
 The checksums exist: `manifests/checksums/fvc2002/` lists every image in
 the corpus by digest and `manifests/MAN-fvc2002.v1.json` names the subsets.
-The pair lists of the two runs are the organisers' comparison lists, which
+The pair lists of the four runs are the organisers' comparison lists, which
 the same manifest names by digest, and their score vectors are published
 beside each run record under `runs/`.
 See [docs/data.md](docs/data.md).
