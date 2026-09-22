@@ -113,8 +113,14 @@ def compose(run, repo_root, created=None):
             "impostor": {k: v for k, v in res["index"]["MFA"].items()
                          if k != "path"},
         },
+        "extractor": run["extractor"],
+        "matcher": run["matcher"],
+        "conversion": run["conversion"],
         "tools": {
-            tool: dict(t, sha256_measured=run["binaries_measured"][tool])
+            tool: dict(t, sha256_measured=run["binaries_measured"][tool],
+                       **({"library_sha256_measured":
+                           run["binaries_measured"][tool + " library"]}
+                          if "library" in t else {}))
             for tool, t in res["tools"].items()
         },
         "tools_manifest": res["tools_manifest"],
@@ -211,7 +217,12 @@ def reproduce(record_dir, repo_root, work=None):
     with open(os.path.join(record_dir, record["observation"]["path"]),
               encoding="utf-8") as fp:
         obs = json.load(fp)
-    again = matching.measure(repo_root, record["dataset"]["id"], work)
+    conv = record.get("conversion")
+    if conv:
+        conv = {k: v for k, v in conv.items() if k != "module"}
+    again = matching.measure(repo_root, record["dataset"]["id"], work,
+                             extractor=record.get("extractor", "mindtct"),
+                             conversion=conv)
     scores_then = [row[3] for row in obs["pairs"]]
     scores_now = [row[3] for row in again["observation"]["pairs"]]
     pairs_then = [row[:3] for row in obs["pairs"]]
@@ -229,6 +240,8 @@ def reproduce(record_dir, repo_root, work=None):
             tool: again["binaries_measured"][tool]
             == record["tools"][tool]["sha256_measured"]
             for tool in record["tools"]},
+        "extractor_identical":
+            again["extractor"] == record.get("extractor", "mindtct"),
         "set_identical":
             again["resolution"]["checksum_list"]["sha256"]
             == record["dataset"]["set"]["sha256"],

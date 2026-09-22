@@ -114,24 +114,27 @@ PROVENANCE := -e RUN_CODE_REVISION="$(RUN_CODE_REVISION)" \
   -e RUN_TREE_DIRTY="$(RUN_TREE_DIRTY)" -e RUN_BRANCH="$(RUN_BRANCH)" \
   -e RUN_IMAGE_ID="$(RUN_IMAGE_ID)"
 
-run-matching: ## One matching run on SUBSET (a manifest id); needs LABDATA
+EXTRACTOR ?= mindtct
+
+run-matching: ## One matching run on SUBSET (a manifest id) with EXTRACTOR; needs LABDATA
 	@if [ -z "$(LABDATA)" ] || [ -z "$(SUBSET)" ]; then \
 	  echo "LABDATA and SUBSET are both required, for example:"; \
 	  echo ""; \
 	  echo "  make run-matching LABDATA=/path/to/labdata SUBSET=fvc2002/DB1_B"; \
+	  echo "  make run-matching LABDATA=/path/to/labdata SUBSET=fvc2002/DB1_B EXTRACTOR=iso-extract"; \
 	  echo ""; \
 	  echo "The record and its observation are written under"; \
-	  echo "\$$LABDATA/derived/inv017/<subset>, outside the tree."; \
+	  echo "\$$LABDATA/derived/matching/<subset>_<extractor>, outside the tree."; \
 	  exit 1; \
 	fi
 	$(DOCKER) run --rm $(REPO_MOUNT) $(DATA_MOUNTS) -w /work -e LABDATA=/data \
-	  $(PROVENANCE) "$(IMAGE)" bash scripts/run_matching.sh "$(SUBSET)"
+	  $(PROVENANCE) "$(IMAGE)" bash scripts/run_matching.sh "$(SUBSET)" "$(EXTRACTOR)"
 
 reproduce-matching: ## Re-run from a record under LABDATA/derived and compare; RECORD is its subdirectory
 	@if [ -z "$(LABDATA)" ] || [ -z "$(RECORD)" ]; then \
 	  echo "LABDATA and RECORD are both required, for example:"; \
 	  echo ""; \
-	  echo "  make reproduce-matching LABDATA=/path/to/labdata RECORD=inv017/fvc2002_DB1_B"; \
+	  echo "  make reproduce-matching LABDATA=/path/to/labdata RECORD=matching/fvc2002_DB1_B_mindtct"; \
 	  echo ""; \
 	  echo "RECORD is relative to \$$LABDATA/derived."; \
 	  exit 1; \

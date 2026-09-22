@@ -4,33 +4,35 @@
 # the host, from the repository root, after `make run-matching`:
 #
 #   scripts/record_run.sh fvc2002/DB1_A
+#   scripts/record_run.sh fvc2002/DB1_A iso-extract
 #
 # It refuses a record that is provisional, or whose revision is not HEAD, or
 # whose observation does not digest to what the record says: a run: commit
 # adds a record of a run made from exactly the tree the commit sits on. It
 # copies and checks and does nothing else; nothing here computes a number.
 #
-# Usage: record_run.sh <subset id>   (LABDATA must be set)
+# Usage: record_run.sh <subset id> [<extractor>]   (LABDATA must be set)
 
 set -euo pipefail
 
 SUBSET="${1:?a subset id such as fvc2002/DB1_A is required}"
+EXTRACTOR="${2:-mindtct}"
 : "${LABDATA:?LABDATA is required}"
-SRC="$LABDATA/derived/inv017/${SUBSET//\//_}"
+SRC="$LABDATA/derived/matching/${SUBSET//\//_}_${EXTRACTOR}"
 [ -f "$SRC/results.json" ] || { echo "FAIL: no results.json under $SRC" >&2; exit 1; }
 
 HEAD_REV="$(git rev-parse HEAD)"
 DIRTY="$(git status --porcelain | wc -l | tr -d ' ')"
 [ "$DIRTY" = "0" ] || { echo "FAIL: the tree is dirty ($DIRTY paths); commit first" >&2; exit 1; }
 
-python3 - "$SRC" "$HEAD_REV" "$SUBSET" <<'PY'
+python3 - "$SRC" "$HEAD_REV" "$SUBSET" "$EXTRACTOR" <<'PY'
 import hashlib
 import json
 import os
 import shutil
 import sys
 
-src, head, subset = sys.argv[1:4]
+src, head, subset, extractor = sys.argv[1:5]
 with open(os.path.join(src, "results.json"), encoding="utf-8") as fp:
     rec = json.load(fp)
 if rec["record"]["provisional"]:
@@ -45,9 +47,15 @@ if hashlib.sha256(obs).hexdigest() != rec["observation"]["sha256"]:
 if len(obs) > 5 * 1024 * 1024:
     raise SystemExit("FAIL: the observation is over 5 MB; REF-016 decision 5 "
                      "puts it under $LABDATA/derived/observations, not here")
+if rec.get("extractor", "mindtct") != extractor:
+    raise SystemExit("FAIL: the record is a %s run, not %s"
+                     % (rec.get("extractor", "mindtct"), extractor))
 
-run_id = "%s-%s-%s" % (rec["record"]["created"].replace("-", ""),
-                       subset.replace("/", "_"), rev[:7])
+# REF-017: the id carries the tool pair, so that two runs on one subset at
+# one revision with different tools are two records
+run_id = "%s-%s-%s-%s-%s" % (rec["record"]["created"].replace("-", ""),
+                             subset.replace("/", "_"), extractor,
+                             rec.get("matcher", "bozorth3"), rev[:7])
 dst = os.path.join("runs", run_id)
 if os.path.exists(dst):
     raise SystemExit("FAIL: %s exists; a run is never re-run under its own id" % dst)
@@ -58,7 +66,8 @@ print("placed %s" % dst)
 print()
 print("subject:")
 m = rec["metrics"]
-print("  run: eer@1 %.4f on %s, mindtct + bozorth3" % (m["eer@1"]["value"], subset))
+print("  run: eer@1 %.4f on %s, %s + %s"
+      % (m["eer@1"]["value"], subset, extractor, rec.get("matcher", "bozorth3")))
 print("trailers:")
 for name in ("eer@1", "auc@1"):
     print("  Result: %s %.6f" % (name, m[name]["value"]))

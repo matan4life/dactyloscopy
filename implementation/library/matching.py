@@ -22,10 +22,13 @@ travels with the number.
 Imported, never invoked as a command, as `REF-013` decision 3 requires; the
 command form is `scripts/run_matching.sh`, which imports and calls.
 
-`measure(repo_root, subset_id, work)` returns the observation and the
-metrics. Every template stays inside this run: `.xyt` files are written to
-scratch and deleted, and what comes back is file names, labels, integer
-scores and a minutia count per image, never a position.
+`measure(repo_root, subset_id, work, extractor, conversion)` returns the
+observation and the metrics. The extractor is `mindtct`, whose `.xyt` goes to
+`bozorth3` as written, or `iso-extract`, whose ISO template is turned into a
+`.xyt` by `iso_xyt` under the conversion parameters given, which the record
+carries (`INV-018`). Every template stays inside this run: `.xyt` files are
+written to scratch and deleted, and what comes back is file names, labels,
+integer scores and a minutia count per image, never a position.
 """
 import hashlib
 import json
@@ -36,7 +39,7 @@ import subprocess
 import numpy as np
 from PIL import Image
 
-from implementation.library import manifest_verify
+from implementation.library import iso_xyt, manifest_verify
 
 WORK = os.environ.get("INV017_WORK", "/tmp/inv017")
 
@@ -142,7 +145,11 @@ def metric_definitions(repo_root):
             "metrics": out}
 
 
-def resolve(repo_root, subset_id):
+EXTRACTORS = ("mindtct", "iso-extract")
+MATCHER = "bozorth3"
+
+
+def resolve(repo_root, subset_id, extractor="mindtct"):
     """Everything the run needs to locate, read from the manifests.
 
     The dataset is addressed by its manifest id and nothing else: the corpus
@@ -205,14 +212,27 @@ def resolve(repo_root, subset_id):
     tpath = os.path.join(repo_root, "manifests", "MAN-tools.v2.json")
     with open(tpath, encoding="utf-8") as fp:
         tools = json.load(fp)
+    if extractor not in EXTRACTORS:
+        raise ValueError("extractor must be one of %s" % (EXTRACTORS,))
     ident = {}
-    for tool in ("mindtct", "bozorth3"):
+    for tool in (extractor, MATCHER):
         cmd, _ = _read(tools, "tools", tool, "invocation", "command")
         flags, _ = _read(tools, "tools", tool, "invocation", "flags")
-        binary, _ = _read(tools, "tools", tool, "binary", "path")
-        sha, _ = _read(tools, "tools", tool, "binary", "sha256")
-        ident[tool] = {"command": cmd, "flags": flags, "binary": binary,
-                       "sha256_manifest": sha}
+        if tool == "iso-extract":
+            # the caller this repository owns, and the library it drives;
+            # MAN-tools.v2 gives the tool an identity over both digests
+            binary, _ = _read(tools, "tools", tool, "binary", "caller_path")
+            sha, _ = _read(tools, "tools", tool, "binary", "caller_sha256")
+            lib, _ = _read(tools, "tools", tool, "binary", "library_path")
+            lsha, _ = _read(tools, "tools", tool, "binary", "library_sha256")
+            ident[tool] = {"command": cmd, "flags": flags, "binary": binary,
+                           "sha256_manifest": sha, "library": lib,
+                           "library_sha256_manifest": lsha}
+        else:
+            binary, _ = _read(tools, "tools", tool, "binary", "path")
+            sha, _ = _read(tools, "tools", tool, "binary", "sha256")
+            ident[tool] = {"command": cmd, "flags": flags, "binary": binary,
+                           "sha256_manifest": sha}
     return {
         "corpus_manifest": {"path": "manifests/MAN-fvc2002.v1.json",
                             "sha256": _sha256(mpath)},
@@ -220,7 +240,8 @@ def resolve(repo_root, subset_id):
                            "sha256": _sha256(tpath)},
         "subset_id": subset_id, "subset_dir": subset_dir,
         "checksum_list": checksum_list,
-        "index": index, "tools": ident,
+        "index": index, "tools": ident, "extractor": extractor,
+        "matcher": MATCHER,
     }
 
 
@@ -251,6 +272,13 @@ def check_binaries(ident):
             raise ValueError("%s at %s has sha256 %s; MAN-tools.v2 says %s"
                              % (tool, t["binary"], got[tool],
                                 t["sha256_manifest"]))
+        if "library" in t:
+            got[tool + " library"] = _sha256(t["library"])
+            if got[tool + " library"] != t["library_sha256_manifest"]:
+                raise ValueError("%s at %s has sha256 %s; MAN-tools.v2 says "
+                                 "%s" % (tool, t["library"],
+                                         got[tool + " library"],
+                                         t["library_sha256_manifest"]))
     return got
 
 
@@ -264,21 +292,46 @@ _JOB = {}
 
 
 def _extract_work(name):
-    """mindtct on one image, as the manifest freezes it: a PNG in, no flags.
-    Returns the minutia count and the .xyt bytes; the .xyt is kept only in
-    the run's own scratch, never returned to a caller outside it."""
+    """One image to one .xyt, by the extractor the run names.
+
+    mindtct: a PNG in, no flags, its .xyt taken as written. iso-extract: a
+    binary PGM in, no flags, its ISO template turned into a .xyt by
+    iso_xyt.convert under the run's conversion parameters; the count is
+    the template's. Returns the count and the .xyt bytes; the .xyt is kept
+    only in the run's own scratch, never returned to a caller outside it."""
     src = os.path.join(_JOB["subset_dir"], name)
     wk = _scratch()
-    png = os.path.join(wk, "a.png")
-    Image.open(src).convert("L").save(png)
-    subprocess.run(["mindtct"] + _JOB["mindtct_flags"] + [png,
-                    os.path.join(wk, "a")], check=True, capture_output=True)
-    with open(os.path.join(wk, "a.xyt"), "rb") as fp:
-        xyt = fp.read()
+    img = Image.open(src).convert("L")
+    if _JOB["extractor"] == "mindtct":
+        png = os.path.join(wk, "a.png")
+        img.save(png)
+        subprocess.run(["mindtct"] + _JOB["extractor_flags"] + [png,
+                        os.path.join(wk, "a")], check=True,
+                       capture_output=True)
+        with open(os.path.join(wk, "a.xyt"), "rb") as fp:
+            xyt = fp.read()
+        count = sum(1 for line in xyt.splitlines() if line.strip())
+        refused = False
+    else:
+        pgm = os.path.join(wk, "a.pgm")
+        img.save(pgm)
+        run = subprocess.run(["iso-extract"] + _JOB["extractor_flags"]
+                             + [pgm, os.path.join(wk, "a.ist")],
+                             capture_output=True)
+        if run.returncode:
+            # the library refused the image (INV-011 F-3 saw code 3 on a
+            # synthetic half-field); an empty .xyt scores 0 with bozorth3,
+            # and the record carries the refusal so the zero can be read
+            xyt, count, refused = b"", 0, run.returncode
+        else:
+            with open(os.path.join(wk, "a.ist"), "rb") as fp:
+                template = fp.read()
+            xyt, count = iso_xyt.convert(template, img.size[1],
+                                         **_JOB["conversion"])
+            refused = False
     for e in os.listdir(wk):
         os.remove(os.path.join(wk, e))
-    count = sum(1 for line in xyt.splitlines() if line.strip())
-    return {"name": name, "count": count, "xyt": xyt}
+    return {"name": name, "count": count, "xyt": xyt, "refused": refused}
 
 
 def _score_work(task):
@@ -417,14 +470,24 @@ def auc_pairwise(genuine, impostor):
 
 
 # ------------------------------------------------------------------ the run
-def measure(repo_root, subset_id, work=None):
+CONVERSION_DEFAULT = {"turn_deg": 180, "quantise": None, "quality": "keep",
+                      "sense": 1}
+
+
+def measure(repo_root, subset_id, work=None, extractor="mindtct",
+            conversion=None):
     """The whole run on one subset. Returns a dict with the resolution, the
-    observation and the metrics; `run_record.py` composes the record."""
+    observation and the metrics; `run_record.py` composes the record.
+
+    `conversion` applies to iso-extract only and defaults to the relation
+    INV-011 and INV-012 measured: the half turn, the ISO grid kept, the
+    quality byte kept. Every key is recorded."""
     if work:
         global WORK
         WORK = work
     os.makedirs(WORK, exist_ok=True)
-    res = resolve(repo_root, subset_id)
+    conv = dict(CONVERSION_DEFAULT, **(conversion or {}))
+    res = resolve(repo_root, subset_id, extractor)
     verified = verify_manifests_first(
         repo_root, os.path.dirname(os.path.dirname(res["subset_dir"])))
     print("  manifests verified: %s" % ", ".join(
@@ -452,14 +515,18 @@ def measure(repo_root, subset_id, work=None):
           % (len(names), res["checksum_list"]["path"]), flush=True)
 
     _JOB.clear()
-    _JOB.update({"subset_dir": res["subset_dir"],
-                 "mindtct_flags": list(res["tools"]["mindtct"]["flags"]),
-                 "bozorth3_flags": list(res["tools"]["bozorth3"]["flags"])})
-    counts, xyt = {}, {}
+    _JOB.update({"subset_dir": res["subset_dir"], "extractor": extractor,
+                 "extractor_flags": list(res["tools"][extractor]["flags"]),
+                 "bozorth3_flags": list(res["tools"][MATCHER]["flags"]),
+                 "conversion": conv})
+    counts, xyt, refusals = {}, {}, {}
     for out in _pool(names, _extract_work):
         counts[out["name"]] = out["count"]
         xyt[out["name"]] = out["xyt"]
-    print("  extracted %d templates" % len(xyt), flush=True)
+        if out["refused"]:
+            refusals[out["name"]] = out["refused"]
+    print("  extracted %d templates with %s, %d refused"
+          % (len(xyt), extractor, len(refusals)), flush=True)
     _JOB["xyt"] = xyt
 
     tasks = genuine + impostor
@@ -479,24 +546,31 @@ def measure(repo_root, subset_id, work=None):
              + [[a, b, "impostor", s] for (a, b), s in zip(impostor, i_scores)])
     return {
         "resolution": {k: v for k, v in res.items() if k != "subset_dir"},
+        "extractor": extractor, "matcher": MATCHER,
+        "conversion": (dict(conv, module="implementation/library/iso_xyt.py")
+                       if extractor == "iso-extract" else None),
         "manifests_verified": verified,
         "binaries_measured": digests,
         "observation": {
             "pairs": pairs,
             "minutia_count": counts,
+            "extractor_refusals": refusals,
             "stderr_by_row": stderr,
             "overflow_sentinel_rows": [k for k, s in enumerate(scores)
                                        if s == 4000],
             "note": ("One row per line of the index files, in their order: "
                      "probe, gallery, list, bozorth3 score. minutia_count is "
-                     "the number of lines mindtct wrote to each .xyt, carried "
+                     "the number of minutiae in each template, carried "
                      "because bozorth3 returns 0 both below its minminutiae "
                      "floor and on an empty template, and a zero is otherwise "
                      "indistinguishable from a non-match. stderr_by_row is "
                      "whatever bozorth3 wrote to its error stream, by row, "
                      "for the rows where it wrote anything; "
                      "overflow_sentinel_rows lists rows whose score is the "
-                     "4000 the tool returns on overflow."),
+                     "4000 the tool returns on overflow. extractor_refusals "
+                     "names each image the extractor returned an error code "
+                     "for, with the code; its template is empty and every "
+                     "pair it is in scores 0."),
         },
         "metrics_manifest": {"path": metrics["path"],
                              "sha256": metrics["sha256"]},

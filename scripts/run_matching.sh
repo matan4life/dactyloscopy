@@ -5,6 +5,7 @@
 # corpus mounted and LABDATA set to where it resolves there:
 #
 #   make run-matching SUBSET=fvc2002/DB1_B
+#   make run-matching SUBSET=fvc2002/DB1_B EXTRACTOR=iso-extract
 #
 # which is the only form that also carries the host's provenance across -
 # the image has no git, so the code revision, the dirty flag, the branch and
@@ -22,15 +23,19 @@
 # tree: what a run record is composed of is open question M-1, and this run
 # is the investigation of it, not its answer.
 #
-# Usage: run_matching.sh <subset id> [<output directory>]
+# Usage: run_matching.sh <subset id> [<extractor>] [<output directory>]
+#   extractor: mindtct (default) or iso-extract, whose ISO template goes
+#   through implementation/library/iso_xyt.py under the conversion the record
+#   carries
 
 set -euo pipefail
 
 REPO="${REPO:-/work}"
 SUBSET="${1:?a subset id such as fvc2002/DB1_B is required}"
-OUT="${2:-${LABDATA:?LABDATA is required}/derived/inv017/${SUBSET//\//_}}"
+EXTRACTOR="${2:-mindtct}"
+OUT="${3:-${LABDATA:?LABDATA is required}/derived/matching/${SUBSET//\//_}_${EXTRACTOR}}"
 
-python3 - "$REPO" "$SUBSET" "$OUT" <<'PY'
+python3 - "$REPO" "$SUBSET" "$EXTRACTOR" "$OUT" <<'PY'
 import json
 import sys
 
@@ -38,9 +43,9 @@ sys.path.insert(0, sys.argv[1])
 from implementation.library.matching import measure
 from implementation.library.run_record import compose, rederive, write
 
-run = measure(sys.argv[1], sys.argv[2])
+run = measure(sys.argv[1], sys.argv[2], extractor=sys.argv[3])
 record, observation = compose(run, sys.argv[1])
-out = write(record, observation, sys.argv[3])
+out = write(record, observation, sys.argv[4])
 print("wrote %s/results.json and observation.json" % out)
 print()
 print("== the record, read back on its own")
