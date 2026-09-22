@@ -29,7 +29,9 @@ variable locates it, and `.env.example` documents it:
 locations, resolved before `$LABDATA/<name>`, with an error that names every
 missing location at once. Nothing in the tree reads either variable or raises
 that error: every location a manifest names is resolved through `LABDATA`
-alone, and the command forms that take a path take it as an argument.
+alone, and every command form that reads a subset takes its manifest id and
+finds the directory through the manifest; `check-tools` alone takes a
+directory, for the reason above.
 
 Code never carries a dataset path as a literal. A dataset is addressed by its
 manifest id, `<competition>/<subset>`, for example `fvc2002/DB1_A`, and the

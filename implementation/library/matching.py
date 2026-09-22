@@ -30,7 +30,6 @@ carries (`INV-018`). Every template stays inside this run: `.xyt` files are
 written to scratch and deleted, and what comes back is file names, labels,
 integer scores and a minutia count per image, never a position.
 """
-import hashlib
 import json
 import os
 import subprocess
@@ -38,7 +37,7 @@ import subprocess
 import numpy as np
 from PIL import Image
 
-from implementation.library import iso_xyt, manifest_verify, pool
+from implementation.library import corpus, iso_xyt, manifest_verify, pool
 
 WORK = os.environ.get("INV017_WORK", "/tmp/inv017")
 
@@ -67,34 +66,7 @@ METRICS = {
         "half. Stored as a fraction."),
 }
 
-UNREADABLE = ("CONFLICT",)
-
-
 # ------------------------------------------------------------ the manifests
-def _read(manifest, *path):
-    """Read a value-and-status field, refusing a CONFLICT.
-
-    `REF-014` decision 7: a field whose status is CONFLICT is never read. A
-    run that needs such a field cannot proceed, and says so, rather than
-    proceeding on a default."""
-    node = manifest
-    for key in path:
-        node = node[key]
-    status = node.get("status")
-    if status in UNREADABLE:
-        raise ValueError("%s has status %s and may not be read"
-                         % ("/".join(path), status))
-    return node["value"], status
-
-
-def _sha256(path):
-    h = hashlib.sha256()
-    with open(path, "rb") as fp:
-        for chunk in iter(lambda: fp.read(1 << 20), b""):
-            h.update(chunk)
-    return h.hexdigest()
-
-
 def verify_manifests_first(repo_root, corpus_root):
     """`REF-014` decision 5: a run that produces numbers verifies its
     dataset and tool manifests first, and does not start if verification
@@ -133,14 +105,15 @@ def metric_definitions(repo_root):
         man = json.load(fp)
     out = {}
     for name, text in METRICS.items():
-        registered, _ = _read(man, "metrics", name, "definition")
+        registered, _ = corpus.read_field(man, "metrics", name, "definition")
         if registered != text:
             raise ValueError("MAN-metrics.v1 registers %s with a definition "
                              "this module does not implement" % name)
-        mid, _ = _read(man, "metrics", name, "id")
-        ver, _ = _read(man, "metrics", name, "version")
+        mid, _ = corpus.read_field(man, "metrics", name, "id")
+        ver, _ = corpus.read_field(man, "metrics", name, "version")
         out[name] = {"id": mid, "version": ver, "definition": registered}
-    return {"path": "manifests/MAN-metrics.v1.json", "sha256": _sha256(mpath),
+    return {"path": "manifests/MAN-metrics.v1.json",
+            "sha256": corpus.sha256_of(mpath),
             "metrics": out}
 
 
@@ -157,48 +130,22 @@ def resolve(repo_root, subset_id, extractor="mindtct"):
     index files are found by the letter of the subset among the manifest's
     `index_files`, and each is verified against the sha256 the manifest
     carries before a single line of it is used."""
-    mpath = os.path.join(repo_root, "manifests", "MAN-fvc2002.v1.json")
-    with open(mpath, encoding="utf-8") as fp:
-        corpus = json.load(fp)
-    root_decl, _ = _read(corpus, "distribution", "root")
-    root = os.path.expandvars(root_decl)
-    if "$" in root:
-        raise ValueError("the corpus root %r did not resolve; LABDATA is not "
-                         "set" % root_decl)
-    sub_rel, _ = _read(corpus, "subsets", subset_id, "path")
-    subset_dir = os.path.join(root, sub_rel)
-    # The set's identity is the digest of its per-file checksum list, which
-    # the manifest carries beside the list's path. The list is checked
-    # against that digest here, and every image the run reads is checked
-    # against the list in measure(): a run on a directory that merely has the
-    # subset's name is not a run on the subset.
-    list_rel, _ = _read(corpus, "subsets", subset_id, "checksums")
-    list_path = os.path.join(repo_root, list_rel)
-    list_declared = corpus["subsets"][subset_id]["checksums"]["sha256"]
-    list_got = _sha256(list_path)
-    if list_got != list_declared:
-        raise ValueError("%s: sha256 %s, manifest says %s"
-                         % (list_rel, list_got, list_declared))
-    expected = {}
-    with open(list_path, encoding="ascii") as fp:
-        for line in fp:
-            digest, name = line.split()
-            expected[name] = digest
-    checksum_list = {"path": list_rel, "sha256": list_got,
-                     "entries": len(expected), "expected": expected}
+    sub = corpus.subset(repo_root, subset_id)
+    root, corpus_manifest = sub["corpus_root"], sub["manifest"]
 
     letter = subset_id.rsplit("_", 1)[-1]          # DB1_B -> B
     index = {}
-    for name, block in corpus["index_files"].items():
+    for name, block in corpus_manifest["index_files"].items():
         if not name.startswith("index_"):
             continue
         stem = name[len("index_"):].split(".")[0]  # index_B.MFR -> B
         if stem.upper() != letter.upper():
             continue
         kind = name.rsplit(".", 1)[1]              # MFR or MFA
-        declared, status = _read(corpus, "index_files", name, "sha256")
+        declared, status = corpus.read_field(corpus_manifest, "index_files",
+                                             name, "sha256")
         path = os.path.join(root, "Dbs", name)
-        got = _sha256(path)
+        got = corpus.sha256_of(path)
         if got != declared:
             raise ValueError("%s: sha256 %s, manifest says %s"
                              % (name, got, declared))
@@ -215,30 +162,37 @@ def resolve(repo_root, subset_id, extractor="mindtct"):
         raise ValueError("extractor must be one of %s" % (EXTRACTORS,))
     ident = {}
     for tool in (extractor, MATCHER):
-        cmd, _ = _read(tools, "tools", tool, "invocation", "command")
-        flags, _ = _read(tools, "tools", tool, "invocation", "flags")
+        cmd, _ = corpus.read_field(tools, "tools", tool, "invocation",
+                                   "command")
+        flags, _ = corpus.read_field(tools, "tools", tool, "invocation",
+                                     "flags")
         if tool == "iso-extract":
             # the caller this repository owns, and the library it drives;
             # MAN-tools.v2 gives the tool an identity over both digests
-            binary, _ = _read(tools, "tools", tool, "binary", "caller_path")
-            sha, _ = _read(tools, "tools", tool, "binary", "caller_sha256")
-            lib, _ = _read(tools, "tools", tool, "binary", "library_path")
-            lsha, _ = _read(tools, "tools", tool, "binary", "library_sha256")
+            binary, _ = corpus.read_field(tools, "tools", tool, "binary",
+                                          "caller_path")
+            sha, _ = corpus.read_field(tools, "tools", tool, "binary",
+                                       "caller_sha256")
+            lib, _ = corpus.read_field(tools, "tools", tool, "binary",
+                                       "library_path")
+            lsha, _ = corpus.read_field(tools, "tools", tool, "binary",
+                                        "library_sha256")
             ident[tool] = {"command": cmd, "flags": flags, "binary": binary,
                            "sha256_manifest": sha, "library": lib,
                            "library_sha256_manifest": lsha}
         else:
-            binary, _ = _read(tools, "tools", tool, "binary", "path")
-            sha, _ = _read(tools, "tools", tool, "binary", "sha256")
+            binary, _ = corpus.read_field(tools, "tools", tool, "binary",
+                                          "path")
+            sha, _ = corpus.read_field(tools, "tools", tool, "binary",
+                                       "sha256")
             ident[tool] = {"command": cmd, "flags": flags, "binary": binary,
                            "sha256_manifest": sha}
     return {
-        "corpus_manifest": {"path": "manifests/MAN-fvc2002.v1.json",
-                            "sha256": _sha256(mpath)},
+        "corpus_manifest": sub["corpus_manifest"],
         "tools_manifest": {"path": "manifests/MAN-tools.v2.json",
-                           "sha256": _sha256(tpath)},
-        "subset_id": subset_id, "subset_dir": subset_dir,
-        "checksum_list": checksum_list,
+                           "sha256": corpus.sha256_of(tpath)},
+        "subset_id": subset_id, "subset_dir": sub["subset_dir"],
+        "checksum_list": sub["checksum_list"],
         "index": index, "tools": ident, "extractor": extractor,
         "matcher": MATCHER,
     }
@@ -266,13 +220,13 @@ def check_binaries(ident):
     number. Returns the digests actually measured."""
     got = {}
     for tool, t in ident.items():
-        got[tool] = _sha256(t["binary"])
+        got[tool] = corpus.sha256_of(t["binary"])
         if got[tool] != t["sha256_manifest"]:
             raise ValueError("%s at %s has sha256 %s; MAN-tools.v2 says %s"
                              % (tool, t["binary"], got[tool],
                                 t["sha256_manifest"]))
         if "library" in t:
-            got[tool + " library"] = _sha256(t["library"])
+            got[tool + " library"] = corpus.sha256_of(t["library"])
             if got[tool + " library"] != t["library_sha256_manifest"]:
                 raise ValueError("%s at %s has sha256 %s; MAN-tools.v2 says "
                                  "%s" % (tool, t["library"],
@@ -471,15 +425,8 @@ def measure(repo_root, subset_id, work=None, extractor="mindtct",
     print("%s: %d genuine and %d impostor pairs over %d images"
           % (subset_id, len(genuine), len(impostor), len(names)), flush=True)
 
-    expected = res["checksum_list"].pop("expected")
-    for name in names:
-        if name not in expected:
-            raise ValueError("%s is named by an index file and absent from "
-                             "the checksum list" % name)
-        got = _sha256(os.path.join(res["subset_dir"], name))
-        if got != expected[name]:
-            raise ValueError("%s: sha256 %s, the checksum list says %s"
-                             % (name, got, expected[name]))
+    corpus.verify_images(res, names)
+    res["checksum_list"].pop("expected")
     print("  %d images verified against %s"
           % (len(names), res["checksum_list"]["path"]), flush=True)
 

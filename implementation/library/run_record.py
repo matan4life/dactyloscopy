@@ -11,10 +11,11 @@ beside it, and then performs the two checks the record exists for:
               digests, the tool identities - and the corpus and the image,
               make the run again and compare every score.
 
-What each check needed that the record did not carry is the investigation's
-finding. `M-1`, the composition of a run record, is an open question and this
-module does not settle it: the record it writes is a candidate, stored as
-derived data outside the tree, and nothing here creates a `runs/` entry.
+What each check needed that the record did not carry was the investigation's
+finding, and `REF-016` decided the composition from it. The record this
+module writes is stored as derived data outside the tree; nothing here
+creates a `runs/` entry - `scripts/record_run.py` places a record there once
+it is not provisional, under the id `REF-017` gives it.
 
 Provenance that only the host can supply - the code revision, whether the
 tree was dirty, the branch, the image id - arrives through the environment
@@ -25,6 +26,7 @@ import datetime
 import hashlib
 import json
 import os
+import sys
 
 from implementation.library import matching
 
@@ -65,14 +67,27 @@ def provenance(repo_root):
                         "note": "from %s=%r on the host" % (var, val)}
         else:
             out[key] = {"value": val, "status": "VERIFIED"}
+    # Every module of the library this process has loaded when the record
+    # is composed - the run, the record, the corpus, the pool, the conversion
+    # if one ran - rather than a list written here that the code can outgrow;
+    # the manifests are named by digest elsewhere.
+    lib = os.path.abspath(os.path.join(repo_root, "implementation", "library"))
     mods = {}
-    for rel in ("implementation/library/matching.py",
-                "implementation/library/run_record.py"):
-        # the two modules that ran; the manifests are named by digest elsewhere
-        mods[rel] = _sha256_file(os.path.join(repo_root, rel))
+    for module in list(sys.modules.values()):
+        path = getattr(module, "__file__", None)
+        if not path:
+            continue
+        path = os.path.abspath(path)
+        if not path.startswith(lib + os.sep):
+            continue
+        rel = os.path.relpath(path, repo_root).replace(os.sep, "/")
+        mods[rel] = _sha256_file(path)
+    mods = dict(sorted(mods.items()))
     out["modules"] = {"value": mods, "status": "VERIFIED",
-                      "note": "sha256 of each module as it ran, which pins "
-                              "the code even when the revision is missing"}
+                      "note": "sha256 of every implementation/library module "
+                              "loaded when the record was composed, which "
+                              "pins the code that ran even when the revision "
+                              "is missing"}
     provisional = any(out[k]["status"] != "VERIFIED"
                       for k in ("revision", "dirty")) or \
         bool(out["dirty"]["value"])
