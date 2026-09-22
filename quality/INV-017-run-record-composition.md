@@ -386,6 +386,20 @@ returns the pairs, the minutia counts, the error-stream rows, the sentinel
 rows, both metrics and every reading of the committed record
 `runs/20260922-fvc2002_DB1_B-a6fd834` unchanged.
 
+**The record digests every module that ran since 2026-09-22.** The Method
+above says the record digests the two modules that ran; it did, by two file
+names written in `run_record.py`, and the names had been outgrown:
+`iso_xyt.py` ran in the `iso-extract` records of `INV-018` and was not pinned.
+In the commit `code: address a subset by its manifest id in every command
+form`, `code.modules` digests every module under `implementation/library`
+loaded when the record is composed; the subset's resolution also moved out of
+`matching.py` into `implementation/library/corpus.py`. A `DB1_B` run from the
+tree at `f96b1eb` on 2026-09-22 lists six, `corpus`, `iso_xyt`,
+`manifest_verify`, `matching`, `pool` and `run_record`, where the records
+under `runs/` list two, and returns the pairs, the minutia counts, the
+error-stream rows, the sentinel rows, both metrics and every reading of the
+committed record `runs/20260922-fvc2002_DB1_B-a6fd834` unchanged.
+
 Every command was run on 2026-09-21 against the tree at `3bec618` and the
 image built from its `Dockerfile`, image id
 `sha256:e0ded5a5dcc8f594df58ab904be76605ad26492da834130592091b1348f7c3fc`, on

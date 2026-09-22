@@ -499,6 +499,19 @@ shell script of that name, in the commit `code: write every command form in
 Python`. Run through it on 2026-09-22 from the tree at `d8404f6`, the `DB1_B`
 aggregate is byte for byte the one the shell form wrote at `493d4db`.
 
+**The command form takes the subset's manifest id since 2026-09-22.** In the
+commit `code: address a subset by its manifest id in every command form`,
+`scripts/measure_extractor_difference.py` takes `fvc2002/DB1_B` in place of a
+directory and a tag, finds the directory through `MAN-fvc2002.v1` by
+`implementation/library/corpus.py`, verifies every image against the subset's
+checksum list before the instrument reads one, and writes the aggregate to
+`$LABDATA/derived/inv014/fvc2002_DB1_B/extractor_difference.json` unless an
+output path is given, as `REF-015` decision 3 decides. Run from the tree at
+`f96b1eb` on 2026-09-22, the `DB1_B` aggregate is byte for byte the one the
+shell form wrote at `493d4db`, and the transcript is the same with one line
+added before it, `80 images verified against
+manifests/checksums/fvc2002/DB1_B.sha256`.
+
 Every command was run on 2026-09-08 against the tree at `f45295e` and the image
 built from its `Dockerfile`, image id
 `sha256:e0ded5a5dcc8f594df58ab904be76605ad26492da834130592091b1348f7c3fc`. The

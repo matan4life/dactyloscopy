@@ -564,6 +564,15 @@ Run through it on 2026-09-22 from the tree at `d8404f6`, the rows it writes
 are byte for byte the ones the shell form wrote at `493d4db`, and the
 transcript is the same line for line.
 
+**The command form writes to the derived location since 2026-09-22.** In the
+commit `code: address a subset by its manifest id in every command form`,
+`scripts/measure_angle_conventions.py` writes the rows to
+`$LABDATA/derived/inv012/angle_conventions.json` unless an output path is
+given, as `REF-015` decision 3 decides; there is no subset in the path because
+the instrument reads none. Run from the tree at `f96b1eb` on 2026-09-22, the
+rows are byte for byte the ones the shell form wrote at `493d4db` and the
+transcript is the same line for line.
+
 Every command was run on 2026-09-08 against the tree at `a16f58d`. `$SP` is a
 scratch directory outside the tree. No corpus image was mounted into any
 container and none was read: this record needs none.

@@ -280,6 +280,17 @@ refusals, error-stream rows and sentinel rows of the committed record
 reproduces with every score identical, and `conversion.json` is byte for
 byte the aggregate in the table above.
 
+**The record digests every module that ran since 2026-09-22.** The three run
+records above pin two modules by digest, `matching.py` and `run_record.py`,
+and not `iso_xyt.py`, which ran in the two `iso-extract` ones; since the
+commit `code: address a subset by its manifest id in every command form` a
+record's `code.modules` digests every module under `implementation/library`
+loaded when it was composed. A `DB1_B` `iso-extract` run from the tree at
+`f96b1eb` on 2026-09-22 lists six, `iso_xyt` among them, and returns the
+pairs, counts, refusals, error-stream rows, sentinel rows and both metrics of
+the committed record
+`runs/20260922-fvc2002_DB1_B-iso-extract-bozorth3-434035a` unchanged.
+
 Every command was run on 2026-09-22 against the tree at `a90b13f` and the
 image built from its `Dockerfile`, image id
 `sha256:e0ded5a5dcc8f594df58ab904be76605ad26492da834130592091b1348f7c3fc`, on

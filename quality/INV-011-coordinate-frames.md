@@ -483,6 +483,16 @@ script of that name, in the commit `code: write every command form in Python`.
 Run through it on 2026-09-22 from the tree at `d8404f6`, the transcript is
 line for line the one the shell form printed at `493d4db`.
 
+**The command form takes the subset's manifest id since 2026-09-22.** In the
+commit `code: address a subset by its manifest id in every command form`,
+`scripts/measure_coordinate_frames.py` takes `fvc2002/DB1_B` in place of the
+fixture directory, finds the directory through `MAN-fvc2002.v1` by
+`implementation/library/corpus.py`, and verifies every image against the
+subset's checksum list before the instrument reads one. Run from the tree at
+`f96b1eb` on 2026-09-22, the transcript is the one the shell form printed at
+`493d4db` with one line and a blank line added before it, `80 images verified
+against manifests/checksums/fvc2002/DB1_B.sha256`.
+
 Every command was run on 2026-09-08 against the tree at `7cbe80b`. `$SP` is a
 scratch directory outside the tree and `$FIX` is the read-only mount of the
 FVC2002 `Db1_b` images. No corpus image, minutia or template leaves a
