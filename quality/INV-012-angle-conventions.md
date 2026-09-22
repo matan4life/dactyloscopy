@@ -564,6 +564,30 @@ Run through it on 2026-09-22 from the tree at `d8404f6`, the rows it writes
 are byte for byte the ones the shell form wrote at `493d4db`, and the
 transcript is the same line for line.
 
+**The statistics are in the tree since 2026-09-22.**
+`implementation/library/angle_conventions_statistics.py` computes every
+statistic of F-2 to F-7 from the rows, in the commit `code: compute the
+statistics of INV-012 from its rows`, and
+`scripts/measure_angle_conventions.py` prints them as the tables above and
+writes them beside the rows as `angle_conventions_statistics.json`. Its
+conventions are in its docstring: the circular mean is the direction of the
+mean unit vector and R its length, a residual is wrapped into (-180, 180],
+"within" a step is inclusive, the nearest grid point is the nearest on the
+circle. Run from the tree at `7523fe2` on 2026-09-22, over rows byte for byte
+the ones the instrument returned at `493d4db`, which the paragraph above says
+are the rows the record was written from, the 81 table lines it prints - F-2's
+two tables, F-3's, all 36 orientations of F-4 and its 18-point worked example,
+F-6's two - are each found in this record character for character, and the
+values in prose, 2.12 and 4.04 pixels, R 0.00336 and 0.00070, 576 and 648 of
+648, F-5's 181.494 and 0.99789, F-7's 32, 32 and 157 and steps of 1, 2, 3 or
+4, are the record's. One value is not: F-6 says the two `mindtct` groups
+differ by 0.345 degrees, which is the difference of the two means as printed
+to three decimals; from the unrounded means, 178.796322 and 178.450723, the
+instrument prints 0.346. The record's 0.345 stands as written and this
+sentence is where the difference is recorded. The paragraph above that says
+F-2 to F-7 rest on this record's account of a computation a reader cannot run
+is replaced by this one.
+
 **The command form writes to the derived location since 2026-09-22.** In the
 commit `code: address a subset by its manifest id in every command form`,
 `scripts/measure_angle_conventions.py` writes the rows to
