@@ -47,6 +47,11 @@ that records it.
   `measure_conversion.py` already did. A run record now
   digests every library module loaded when it was composed, not two named
   ones. `corpus` is held by seven tests; the suite is 89.
+- The first item of issue #10: `INV-012`'s statistics of F-2 to F-7 come
+  back from the tree, by `implementation/library/angle_conventions_statistics.py`
+  over the rows the sweep returns, printed as the record's own tables; the
+  record says which one value differs in the third decimal and why. The
+  suite is 96.
 
 ## 2026-09-21
 
