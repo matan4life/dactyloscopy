@@ -477,6 +477,12 @@ instrument in the tree produces them they rest on this record's account
 alone. A paragraph written on 2026-09-09 said the module prints every number
 below; it did not, and this paragraph replaces it.
 
+**The command form is `scripts/measure_coordinate_frames.py` since
+2026-09-22**, a Python file with the same argument in place of the shell
+script of that name, in the commit `code: write every command form in Python`.
+Run through it on 2026-09-22 from the tree at `d8404f6`, the transcript is
+line for line the one the shell form printed at `493d4db`.
+
 Every command was run on 2026-09-08 against the tree at `7cbe80b`. `$SP` is a
 scratch directory outside the tree and `$FIX` is the read-only mount of the
 FVC2002 `Db1_b` images. No corpus image, minutia or template leaves a

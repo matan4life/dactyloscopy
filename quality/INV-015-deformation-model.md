@@ -763,6 +763,17 @@ rendered from the record's own aggregate, from the reproduction and from the
 pooled run. `DB1_B` takes 21.1 s where the instrument this record was written
 from takes 348.9 s, and `DB1_A` takes 3 min 56 s.
 
+**The pool is shared and the command form is
+`scripts/measure_warp_families.py` since 2026-09-22.** The commit `code: one
+process pool for every instrument` moved the pool and the scratch directory
+out of `warp_families.py` into `implementation/library/pool.py`, which the two
+other pooled instruments also call; `INV015_SERIAL=1` still forces this one's
+sequential path. The commit `code: write every command form in Python` put a
+Python file with the same three arguments in place of the shell script of that
+name. Run through it on 2026-09-22 from the tree at `d8404f6`, the `DB1_B`
+aggregate is byte for byte the one the shell form wrote at `493d4db`, and the
+tables are the same line for line.
+
 Every command was run on 2026-09-08 against the tree at `b0a35f7` and the image
 built from its `Dockerfile`, image id
 `sha256:e0ded5a5dcc8f594df58ab904be76605ad26492da834130592091b1348f7c3fc`.

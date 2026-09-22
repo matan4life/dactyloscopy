@@ -373,6 +373,19 @@ this record is written from:
 | `DB1_B` | `8088c06301bb5b6b534552fb6da187be6fa60e69d63a34cdc1ae5c85f67c85af` | `532628ae6aac9a6a7e2a8e2e76b6233b077e76b41c51311b13ed0716b0a4e407`, 22 083 |
 | `DB1_A` | `41cb4226e6e6358527f9121ea1a70b6a9b097ac7f0c0778edee66a1dec917320` | `c815708f51139ff79e06372d2b85eeeff9c5c0129f6d0d4d96cc8b19b28de7cf`, 473 796 |
 
+**The pool is shared and the command forms are `scripts/run_matching.py` and
+`scripts/reproduce_matching.py` since 2026-09-22.** The commit `code: one
+process pool for every instrument` moved the pool and the scratch directory
+out of `matching.py` into `implementation/library/pool.py`; `INV017_SERIAL=1`
+still forces this run's sequential path. The commit `code: write every command
+form in Python` put Python files with the same arguments in place of the two
+shell scripts, and gave the placer, `scripts/record_run.py`, the target `make
+record-run`. The `Makefile` targets above are unchanged in name and arguments.
+Run through them on 2026-09-22 from the tree at `d8404f6`, a `DB1_B` run
+returns the pairs, the minutia counts, the error-stream rows, the sentinel
+rows, both metrics and every reading of the committed record
+`runs/20260922-fvc2002_DB1_B-a6fd834` unchanged.
+
 Every command was run on 2026-09-21 against the tree at `3bec618` and the
 image built from its `Dockerfile`, image id
 `sha256:e0ded5a5dcc8f594df58ab904be76605ad26492da834130592091b1348f7c3fc`, on

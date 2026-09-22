@@ -264,6 +264,22 @@ observation gained at `8578ce6`, empty here. The `mindtct` figures in F-3
 are the committed records, that one and
 `runs/20260922-fvc2002_DB1_A-3030b18`.
 
+**The command forms are Python files since 2026-09-22.** The commit `code:
+write every command form in Python` replaced `scripts/measure_conversion.sh`
+with `scripts/measure_conversion.py`, same argument, so the third command
+above is now
+
+    docker run --rm -v "<repo>:/work" -v "$LABDATA/raw:/data/raw:ro" \
+      -v "$LABDATA/derived:/data/derived" -w /work -e LABDATA=/data \
+      dactyloscopy:dev python3 scripts/measure_conversion.py fvc2002/DB1_B
+
+and the two `make` commands are unchanged. Run from the tree at `d8404f6`
+on 2026-09-22, the `DB1_B` `iso-extract` run returns the pairs, counts,
+refusals, error-stream rows and sentinel rows of the committed record
+`runs/20260922-fvc2002_DB1_B-iso-extract-bozorth3-434035a` unchanged and
+reproduces with every score identical, and `conversion.json` is byte for
+byte the aggregate in the table above.
+
 Every command was run on 2026-09-22 against the tree at `a90b13f` and the
 image built from its `Dockerfile`, image id
 `sha256:e0ded5a5dcc8f594df58ab904be76605ad26492da834130592091b1348f7c3fc`, on

@@ -493,6 +493,12 @@ invoked, which `implementation/library/README.md` and `REF-013` decision 3
 require. Re-run from the tree on both subsets it returns an aggregate
 identical to the one this record is written from, field for field.
 
+**The command form is `scripts/measure_extractor_difference.py` since
+2026-09-22**, a Python file with the same three arguments in place of the
+shell script of that name, in the commit `code: write every command form in
+Python`. Run through it on 2026-09-22 from the tree at `d8404f6`, the `DB1_B`
+aggregate is byte for byte the one the shell form wrote at `493d4db`.
+
 Every command was run on 2026-09-08 against the tree at `f45295e` and the image
 built from its `Dockerfile`, image id
 `sha256:e0ded5a5dcc8f594df58ab904be76605ad26492da834130592091b1348f7c3fc`. The

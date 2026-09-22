@@ -557,6 +557,13 @@ cannot run. A paragraph written on 2026-09-09 said a re-run returns those
 means and concentrations; it returns the rows they were computed from, and
 this paragraph replaces it.
 
+**The command form is `scripts/measure_angle_conventions.py` since
+2026-09-22**, a Python file with the same argument in place of the shell
+script of that name, in the commit `code: write every command form in Python`.
+Run through it on 2026-09-22 from the tree at `d8404f6`, the rows it writes
+are byte for byte the ones the shell form wrote at `493d4db`, and the
+transcript is the same line for line.
+
 Every command was run on 2026-09-08 against the tree at `a16f58d`. `$SP` is a
 scratch directory outside the tree. No corpus image was mounted into any
 container and none was read: this record needs none.

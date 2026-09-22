@@ -368,6 +368,19 @@ aggregate is byte for byte the aggregate this record was written from, both
 from the pool and with `INV016_SERIAL=1` forcing the sequential path. It takes
 7.2 s where it took 99.7 s.
 
+**The pool is shared and the command form is `scripts/measure_noise_floor.py`
+since 2026-09-22.** The commit `code: one process pool for every instrument`
+moved the pool out of `noise_floor.py` into `implementation/library/pool.py`,
+which the two other pooled instruments also call; the pool is now sized by the
+affinity mask and the cgroup quota rather than by `os.cpu_count()`, and
+delivers each image's result as it arrives rather than all of them at the end.
+`INV016_SERIAL=1` still forces this one's sequential path. The commit `code:
+write every command form in Python` put a Python file with the same three
+arguments in place of the shell script of that name. Run through it on
+2026-09-22 from the tree at `d8404f6`, the `DB1_B` aggregate is byte for byte
+the one the shell form wrote at `493d4db`, from the pool and with
+`INV016_SERIAL=1`.
+
 Every command was run on 2026-09-08 against the tree at `f844aae` and the image
 built from its `Dockerfile`, image id
 `sha256:e0ded5a5dcc8f594df58ab904be76605ad26492da834130592091b1348f7c3fc`.
